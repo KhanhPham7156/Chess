@@ -5,6 +5,8 @@ import java.awt.*;
 
 public class ChessFrame extends JFrame {
     private BoardPanel boardPanel;
+    private MainMenuPanel menuPanel;
+    private JPanel currentPanel;
 
     public ChessFrame() {
         // Main frame setup
@@ -15,32 +17,36 @@ public class ChessFrame extends JFrame {
         setSize(800, 800);
 
         // Set logo icon
-        ImageIcon icon = new ImageIcon("resources/image/other/logo.png");
+        ImageIcon icon = new ImageIcon("resources/image/other/Logo.png");
         setIconImage(icon.getImage());
 
         // Initialize board panel
         boardPanel = new BoardPanel();
-        add(boardPanel, BorderLayout.CENTER);
+        menuPanel = new MainMenuPanel(this);
 
-        // Initialize control panel with buttons
-        JPanel controlPanel = new JPanel();
-        JButton startButton = new JButton("Start");
-        JButton exitButton = new JButton("Exit");
-        controlPanel.add(startButton);
-        controlPanel.add(exitButton);
-        add(controlPanel, BorderLayout.SOUTH);
-
-        // Handle exit button action
-        exitButton.addActionListener(e -> System.exit(0));
-
-        // Handle start button action
-        startButton.addActionListener(e -> {
-            // thêm logic xử lý vào đây
-        });
+        switchPanel(menuPanel);
 
         setLocationRelativeTo(null); // Center the frame on the screen
         setVisible(true);
     }
+    
+    public void switchPanel(JPanel panel) {
+        if (currentPanel != null) {
+            remove(currentPanel);
+        }
+        currentPanel = panel;
+        add(currentPanel, BorderLayout.CENTER);
+        revalidate();
+        repaint();
+    }
+
+     // Bắt đầu game với chế độ được chọn
+    public void startGame(boolean vsStockfish) {
+        System.out.println("Starting game: " + (vsStockfish ? "vs Stockfish" : "vs Human"));
+        boardPanel.resetBoard();
+        switchPanel(boardPanel);
+    }
+
 
     public static void main(String[] args) {
         // Create and display the chess frame
