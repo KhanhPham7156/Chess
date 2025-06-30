@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class Bishop extends Piece {
     public Bishop(boolean isWhite, int row, int col){
-        super(isWhite, row, col));
+        super(isWhite, row, col);
     }
 
     @Override

@@ -31,7 +31,7 @@ public class Queen extends Piece {
                 newRow += dir[0];
                 newCol += dir[1];
                 if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) {
-                    break; 
+                    break;
                 }
                 Piece target = board.getPiece(newRow, newCol);
                 if (target == null) {
@@ -45,5 +45,10 @@ public class Queen extends Piece {
             }
         }
         return validMoves;
+    }
+    
+    @Override
+    public String getSymbol() {
+        return isWhite ? "wQ" : "bQ";
     }
 }

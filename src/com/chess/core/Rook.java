@@ -34,7 +34,7 @@ public class Rook extends Piece{
                 if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) {
                     break;
                 }
-                Piece target = board.getPiece(newRowm newCol);
+                Piece target = board.getPiece(newRow, newCol);
                 if(target == null){
                     validMoves.add(new Move(row, col, newRow, newCol));
                 } else{
@@ -44,8 +44,8 @@ public class Rook extends Piece{
                     break;
                 }
             }
-            return validMoves;
         }
+        return validMoves;
     }
 
     @Override

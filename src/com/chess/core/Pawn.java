@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class Pawn extends Piece{
-    public Paww(boolean isWhite,int row, int col){
+    public Pawn(boolean isWhite, int row, int col) {
         super(isWhite, row, col);
     }
 

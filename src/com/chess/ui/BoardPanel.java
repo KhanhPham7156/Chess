@@ -29,7 +29,7 @@ public class BoardPanel extends JPanel implements MouseListener, MouseMotionList
         board[0][0] = new Rook(false, 0, 0);
         board[0][1] = new Knight(false, 0, 1);
         board[0][2] = new Bishop(false, 0, 2);
-        board[0][3] = new Queen(false, 0, 3);
+        board[0][3] = new Queen(false, 0, 3); 
         board[0][4] = new King(false, 0, 4);
         board[0][5] = new Bishop(false, 0, 5);
         board[0][6] = new Knight(false, 0, 6);
