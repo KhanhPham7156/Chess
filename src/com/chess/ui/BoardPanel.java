@@ -13,7 +13,7 @@ import com.chess.core.Rook;
 import com.chess.core.Pawn;
 import com.chess.core.Queen;
 
-public class BoardPanel extends JPanel implements MouseListener, MouseMotionListener {
+public class BoardPanel extends JPanel {
     private JButton[][] squares = new JButton[8][8];
     private JButton selectedSquare = null;
     private Piece[][] board = new Piece[8][8];
@@ -71,8 +71,10 @@ public class BoardPanel extends JPanel implements MouseListener, MouseMotionList
                 // Xử lý click
                 final int r = row;
                 final int c = col;
-                //squares[row][col].addActionListener(e -> handleSquareClick(r, c));
+                squares[row][col].addActionListener(e -> handleSquareClick(r, c));
+
                 add(squares[row][col]);
+                updateSquare(row, col);
             }
         }
     }

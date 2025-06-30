@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public class Pawn extends Piece{
     public Pawn(boolean isWhite, int row, int col) {
         super(isWhite, row, col);
+        loadIcon();
     }
 
     @Override

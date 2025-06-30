@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public class Rook extends Piece{
     public Rook(boolean isWhite, int row, int col) {
         super(isWhite, row, col);
+        loadIcon();
     }
 
     @Override

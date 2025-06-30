@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public class Queen extends Piece {
     public Queen(boolean isWhite, int row, int col) {
         super(isWhite, row, col);
+        loadIcon();
     }
 
     @Override
