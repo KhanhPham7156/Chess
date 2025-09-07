@@ -2,7 +2,7 @@ package com.chess.core;
 
 public class Board {
     private Piece[][] board = new Piece[8][8];
-    
+
     public Board() {
         initializeBoard();
     }
@@ -20,7 +20,7 @@ public class Board {
         for (int col = 0; col < 8; col++) {
             board[1][col] = new Pawn(false, 1, col);
         }
-        
+
         // Black pieces
         for (int col = 0; col < 8; col++) {
             board[6][col] = new Pawn(true, 6, col);
@@ -48,7 +48,7 @@ public class Board {
         }
         return null;
     }
-    
+
     public boolean movePiece(Move move) {
         int fromRow = move.getFromRow();
         int fromCol = move.getFromCol();
@@ -65,7 +65,16 @@ public class Board {
         piece.setPosition(toRow, toCol);
         return true;
     }
-    
+
+    public void setPiece(int row, int col, Piece piece) {
+        if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+            board[row][col] = piece;
+            if (piece != null) {
+                piece.setPosition(row, col);
+            }
+        }
+    }
+
     // Check if the king of the specified color is in check
     public boolean isInCheck(boolean isWhite) {
         // Find the king
@@ -86,7 +95,7 @@ public class Board {
 
         // Check the opponent's pieces threatening the King
         for (int row = 0; row < 8; row++) {
-            for(int col = 0;col<8;col++){
+            for (int col = 0; col < 8; col++) {
                 Piece piece = board[row][col];
                 if (piece != null && piece.isWhite() != isWhite) {
                     for (Move move : piece.getValidMoves(this)) {
@@ -99,7 +108,7 @@ public class Board {
         }
         return false;
     }
-    
+
     // Generate FEN (Forsyth-Edwards Notation) string for Stockfish
     public String toFEN() {
         StringBuilder fen = new StringBuilder();
@@ -117,7 +126,7 @@ public class Board {
                     String symbol = piece.getSymbol();
                     fen.append(symbol.charAt(1));
                     if (!piece.isWhite()) {
-                        fen.append(Character.toLowerCase(symbol.charAt(1))); 
+                        fen.append(Character.toLowerCase(symbol.charAt(1)));
                     }
                 }
             }
@@ -128,7 +137,7 @@ public class Board {
                 fen.append("/");
             }
         }
-        fen.append(" w KQkq - 0 1"); 
+        fen.append(" w KQkq - 0 1");
         return fen.toString();
     }
 }
