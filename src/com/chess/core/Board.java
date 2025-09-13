@@ -2,9 +2,14 @@ package com.chess.core;
 
 public class Board {
     private Piece[][] board = new Piece[8][8];
+    private Game game;
 
     public Board() {
         initializeBoard();
+    }
+
+    public void setGame(Game game) {
+        this.game = game;
     }
 
     public void initializeBoard() {
@@ -206,6 +211,8 @@ public class Board {
     // Generate FEN (Forsyth-Edwards Notation) string for Stockfish
     public String toFEN() {
         StringBuilder fen = new StringBuilder();
+
+        // Board position
         for (int row = 0; row < 8; row++) {
             int emptyCount = 0;
             for (int col = 0; col < 8; col++) {
@@ -218,10 +225,8 @@ public class Board {
                         emptyCount = 0;
                     }
                     String symbol = piece.getSymbol();
-                    fen.append(symbol.charAt(1));
-                    if (!piece.isWhite()) {
-                        fen.append(Character.toLowerCase(symbol.charAt(1)));
-                    }
+                    char pieceChar = symbol.charAt(1);
+                    fen.append(piece.isWhite() ? pieceChar : Character.toLowerCase(pieceChar));
                 }
             }
             if (emptyCount > 0) {
@@ -231,7 +236,19 @@ public class Board {
                 fen.append("/");
             }
         }
-        fen.append(" w KQkq - 0 1");
+
+        // Add active color based on game state
+        fen.append(game != null && game.isWhiteTurn() ? " w" : " b");
+
+        // Add castling availability (simplified)
+        fen.append(" KQkq");
+
+        // Add en passant target square (simplified)
+        fen.append(" -");
+
+        // Add halfmove clock and fullmove number (simplified)
+        fen.append(" 0 1");
+
         return fen.toString();
     }
 }

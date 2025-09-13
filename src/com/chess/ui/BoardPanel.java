@@ -1,24 +1,113 @@
 package com.chess.ui;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.List;
 import javax.swing.*;
 import com.chess.core.*;
 import com.chess.core.Pawn;
 import com.chess.core.King;
+import com.chess.engine.ComputerPlayer;
 
 public class BoardPanel extends JPanel {
     private JButton[][] squares = new JButton[8][8];
     private JButton selectedSquare = null;
     private Game game = new Game();
+    private ComputerPlayer computer;
+    private boolean vsComputer;
+    private Timer computerMoveTimer;
 
     // Add color constants at the top of the class
     private static final Color LIGHT_SQUARE = Color.WHITE;
-    private static final Color DARK_SQUARE = new Color(0, 153, 0); // Green color
+    private static final Color DARK_SQUARE = new Color(100, 100, 100); // Green color
+    private static final int DOT_SIZE = 24;
+    private static final Color VALID_MOVE_DOT_COLOR = new Color(0, 0, 0, 200); // Semi-transparent green
 
-    public BoardPanel() {
+    // Helper class for layered icons
+    private static class LayeredIcon implements Icon {
+        private final Icon baseIcon;
+        private final Icon overlayIcon;
+
+        public LayeredIcon(Icon base, Icon overlay) {
+            this.baseIcon = base;
+            this.overlayIcon = overlay;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            if (baseIcon != null) {
+                baseIcon.paintIcon(c, g, x, y);
+            }
+            if (overlayIcon != null) {
+                int centerX = x + (getIconWidth() - overlayIcon.getIconWidth()) / 2;
+                int centerY = y + (getIconHeight() - overlayIcon.getIconHeight()) / 2;
+                overlayIcon.paintIcon(c, g, centerX, centerY);
+            }
+        }
+
+        @Override
+        public int getIconWidth() {
+            return baseIcon != null ? baseIcon.getIconWidth() : overlayIcon.getIconWidth();
+        }
+
+        @Override
+        public int getIconHeight() {
+            return baseIcon != null ? baseIcon.getIconHeight() : overlayIcon.getIconHeight();
+        }
+    }
+
+    private Image createDotImage() {
+        BufferedImage img = new BufferedImage(DOT_SIZE, DOT_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = img.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(VALID_MOVE_DOT_COLOR);
+        g2d.fillOval(0, 0, DOT_SIZE - 1, DOT_SIZE - 1);
+        g2d.dispose();
+        return img;
+    }
+
+    public BoardPanel(boolean vsComputer) {
+        this.vsComputer = vsComputer;
+        if (vsComputer) {
+            computer = new ComputerPlayer();
+            // Create timer for computer moves with 500ms delay
+            computerMoveTimer = new Timer(500, e -> makeComputerMove());
+            computerMoveTimer.setRepeats(false);
+        }
         setLayout(new GridLayout(8, 8));
         initializeBoard();
+    }
+
+    private void makeComputerMove() {
+        if (!game.isGameOver() && !game.isWhiteTurn()) {
+            Move computerMove = computer.getMove(game);
+            if (computerMove != null) {
+                game.makeMove(computerMove);
+                updateSquare(computerMove.getFromRow(), computerMove.getFromCol());
+                updateSquare(computerMove.getToRow(), computerMove.getToCol());
+
+                // For special moves
+                if (computerMove.getSpecialMove() == 'E') {
+                    // Update en passant capture square
+                    updateSquare(computerMove.getFromRow(), computerMove.getToCol());
+                } else if (computerMove.getSpecialMove() == 'C') {
+                    // Update rook position for castling
+                    int rookFromCol = computerMove.getToCol() > computerMove.getFromCol() ? 7 : 0;
+                    int rookToCol = computerMove.getToCol() > computerMove.getFromCol() ? computerMove.getToCol() - 1
+                            : computerMove.getToCol() + 1;
+                    updateSquare(computerMove.getFromRow(), rookFromCol);
+                    updateSquare(computerMove.getFromRow(), rookToCol);
+                }
+
+                String status = game.getGameStatus();
+                if (!status.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, status);
+                    if (status.contains("wins") || status.contains("draw")) {
+                        resetBoard();
+                    }
+                }
+            }
+        }
     }
 
     public void initializeBoard() {
@@ -68,10 +157,22 @@ public class BoardPanel extends JPanel {
                 selectedSquare = squares[row][col];
                 selectedSquare.setBackground(Color.YELLOW);
 
-                // Show valid moves
+                // Show valid moves with dots
                 List<Move> validMoves = clickedPiece.getValidMoves(game.getBoard());
                 for (Move move : validMoves) {
-                    squares[move.getToRow()][move.getToCol()].setBackground(Color.GREEN);
+                    final int moveRow = move.getToRow();
+                    final int moveCol = move.getToCol();
+
+                    // Create dot icon
+                    ImageIcon dotIcon = new ImageIcon(createDotImage());
+
+                    // If there's already a piece on the square, create composite icon
+                    Icon currentIcon = squares[moveRow][moveCol].getIcon();
+                    if (currentIcon != null) {
+                        squares[moveRow][moveCol].setIcon(new LayeredIcon(currentIcon, dotIcon));
+                    } else {
+                        squares[moveRow][moveCol].setIcon(dotIcon);
+                    }
                 }
             }
         } else if (selectedSquare != null) {
@@ -157,7 +258,13 @@ public class BoardPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, status);
                     if (status.contains("wins") || status.contains("draw")) {
                         resetBoard();
+                        return;
                     }
+                }
+
+                // Start computer move timer if playing against computer
+                if (vsComputer && !game.isGameOver()) {
+                    computerMoveTimer.start();
                 }
             }
 
@@ -166,7 +273,19 @@ public class BoardPanel extends JPanel {
         }
     }
 
+    private void removeValidMoveDots() {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                squares[row][col].removeAll();
+                squares[row][col].revalidate();
+                squares[row][col].repaint();
+                updateSquare(row, col); // Restore the piece icon if there was one
+            }
+        }
+    }
+
     private void resetSquareColors() {
+        removeValidMoveDots();
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 if ((row + col) % 2 == 1) {

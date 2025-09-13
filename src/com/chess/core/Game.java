@@ -11,6 +11,7 @@ public class Game {
 
     public Game() {
         this.board = new Board();
+        this.board.setGame(this);
         this.isWhiteTurn = true; // White moves first
         this.gameOver = false;
         this.moveHistory = new ArrayList<>();

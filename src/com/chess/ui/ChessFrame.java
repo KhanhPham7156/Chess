@@ -22,7 +22,7 @@ public class ChessFrame extends JFrame {
 
         // Initialize panels
         menuPanel = new MainMenuPanel(this);
-        boardPanel = new BoardPanel();
+        boardPanel = new BoardPanel(false); // Initialize with human vs human mode
 
         // Show menu panel by default
         showMenu();
@@ -45,23 +45,12 @@ public class ChessFrame extends JFrame {
         repaint();
     }
 
-    // Bắt đầu game với chế độ được chọn
-    public void startGame(boolean vsStockfish) {
-        System.out.println("Starting game: " + (vsStockfish ? "vs Stockfish" : "vs Human"));
-        boardPanel.resetBoard();
-        switchPanel(boardPanel);
-    }
-
     public void startNewGame(boolean vsComputer) {
         getContentPane().removeAll();
-        boardPanel = new BoardPanel();
+        boardPanel = new BoardPanel(vsComputer); // Pass the game mode to BoardPanel
         getContentPane().add(boardPanel);
         validate();
         repaint();
-
-        if (vsComputer) {
-            // TODO: Initialize computer opponent
-        }
     }
 
     public static void main(String[] args) {
