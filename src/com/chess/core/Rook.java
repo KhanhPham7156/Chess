@@ -4,10 +4,21 @@ import javax.swing.*;
 import java.util.List;
 import java.util.ArrayList;
 
-public class Rook extends Piece{
+public class Rook extends Piece {
+    private boolean hasMoved;
+
     public Rook(boolean isWhite, int row, int col) {
         super(isWhite, row, col);
         loadIcon();
+        this.hasMoved = false;
+    }
+
+    public boolean hasMoved() {
+        return hasMoved;
+    }
+
+    public void setHasMoved() {
+        this.hasMoved = true;
     }
 
     @Override
@@ -20,10 +31,10 @@ public class Rook extends Piece{
     public List<Move> getValidMoves(Board board) {
         List<Move> validMoves = new ArrayList<>();
         int[][] directions = {
-            { -1, 0 },
-            { 1, 0 },  
-            { 0, -1 }, 
-            { 0, 1 }   
+                { -1, 0 },
+                { 1, 0 },
+                { 0, -1 },
+                { 0, 1 }
         };
 
         for (int[] dir : directions) {
@@ -36,10 +47,10 @@ public class Rook extends Piece{
                     break;
                 }
                 Piece target = board.getPiece(newRow, newCol);
-                if(target == null){
+                if (target == null) {
                     validMoves.add(new Move(row, col, newRow, newCol));
-                } else{
-                    if(target.isWhite()!=isWhite){
+                } else {
+                    if (target.isWhite() != isWhite) {
                         validMoves.add(new Move(row, col, newRow, newCol)); // Capture move
                     }
                     break;

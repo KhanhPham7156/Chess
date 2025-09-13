@@ -75,38 +75,132 @@ public class Board {
         }
     }
 
-    // Check if the king of the specified color is in check
-    public boolean isInCheck(boolean isWhite) {
-        // Find the king
-        int kingRow = -1, kingCol = -1;
+    public boolean isCheckmate(boolean isWhite) {
+        // First check if the king is in check
+        if (!isInCheck(isWhite)) {
+            return false;
+        }
+
+        // Try all possible moves for all pieces of the current player
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 Piece piece = getPiece(row, col);
-                if (piece instanceof King && piece.isWhite() == isWhite) {
-                    kingRow = row;
-                    kingCol = col;
-                    break;
-                }
-            }
-        }
-        if (kingRow == -1 || kingCol == -1) {
-            return false; // King not found
-        }
-
-        // Check the opponent's pieces threatening the King
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
-                Piece piece = board[row][col];
-                if (piece != null && piece.isWhite() != isWhite) {
+                if (piece != null && piece.isWhite() == isWhite) {
                     for (Move move : piece.getValidMoves(this)) {
-                        if (move.getToRow() == kingRow && move.getToCol() == kingCol) {
-                            return true;
+                        // Try the move
+                        Piece capturedPiece = getPiece(move.getToRow(), move.getToCol());
+                        Piece movingPiece = getPiece(move.getFromRow(), move.getFromCol());
+
+                        // Make temporary move
+                        setPiece(move.getToRow(), move.getToCol(), movingPiece);
+                        setPiece(move.getFromRow(), move.getFromCol(), null);
+
+                        // Check if king is still in check after this move
+                        boolean stillInCheck = isInCheck(isWhite);
+
+                        // Undo the move
+                        setPiece(move.getFromRow(), move.getFromCol(), movingPiece);
+                        setPiece(move.getToRow(), move.getToCol(), capturedPiece);
+
+                        // If we found a move that gets us out of check, it's not checkmate
+                        if (!stillInCheck) {
+                            return false;
                         }
                     }
                 }
             }
         }
+
+        // If we haven't found any legal moves to get out of check, it's checkmate
+        return true;
+    }
+
+    public boolean isSquareAttacked(int targetRow, int targetCol, boolean squareOwner) {
+        // Check for attacking pawns
+        int pawnDirection = squareOwner ? -1 : 1; // Direction pawns would come from - opposite of pawn's movement
+                                                  // direction
+        int[] pawnCols = { -1, 1 }; // Diagonal captures
+        for (int colOffset : pawnCols) {
+            int fromCol = targetCol + colOffset;
+            int fromRow = targetRow + pawnDirection;
+            if (fromRow >= 0 && fromRow < 8 && fromCol >= 0 && fromCol < 8) {
+                Piece piece = getPiece(fromRow, fromCol);
+                if (piece instanceof Pawn && piece.isWhite() != squareOwner) {
+                    return true;
+                }
+            }
+        }
+
+        // Check for attacking knights
+        int[][] knightMoves = {
+                { -2, -1 }, { -2, 1 }, { -1, -2 }, { -1, 2 },
+                { 1, -2 }, { 1, 2 }, { 2, -1 }, { 2, 1 }
+        };
+        for (int[] move : knightMoves) {
+            int fromRow = targetRow + move[0];
+            int fromCol = targetCol + move[1];
+            if (fromRow >= 0 && fromRow < 8 && fromCol >= 0 && fromCol < 8) {
+                Piece piece = getPiece(fromRow, fromCol);
+                if (piece instanceof Knight && piece.isWhite() != squareOwner) {
+                    return true;
+                }
+            }
+        }
+
+        // Check for attacking pieces in each direction (queen, rook, bishop)
+        int[][] directions = {
+                { -1, -1 }, { -1, 0 }, { -1, 1 },
+                { 0, -1 }, { 0, 1 },
+                { 1, -1 }, { 1, 0 }, { 1, 1 }
+        };
+
+        for (int[] dir : directions) {
+            int fromRow = targetRow + dir[0];
+            int fromCol = targetCol + dir[1];
+            while (fromRow >= 0 && fromRow < 8 && fromCol >= 0 && fromCol < 8) {
+                Piece piece = getPiece(fromRow, fromCol);
+                if (piece != null) {
+                    if (piece.isWhite() != squareOwner) {
+                        boolean isDiagonal = dir[0] != 0 && dir[1] != 0;
+                        boolean isStraight = dir[0] == 0 || dir[1] == 0;
+
+                        if (piece instanceof Queen ||
+                                (piece instanceof Rook && isStraight) ||
+                                (piece instanceof Bishop && isDiagonal) ||
+                                (piece instanceof King && Math.abs(fromRow - targetRow) <= 1
+                                        && Math.abs(fromCol - targetCol) <= 1)) {
+                            return true;
+                        }
+                    }
+                    break; // Stop checking this direction if we hit any piece
+                }
+                fromRow += dir[0];
+                fromCol += dir[1];
+            }
+        }
+
         return false;
+    }
+
+    // Check if the king of the specified color is in check
+    public boolean isInCheck(boolean isWhite) {
+        // Find the king first
+        int kingRow = -1, kingCol = -1;
+        outer: for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = getPiece(row, col);
+                if (piece instanceof King && piece.isWhite() == isWhite) {
+                    kingRow = row;
+                    kingCol = col;
+                    break outer;
+                }
+            }
+        }
+
+        if (kingRow == -1 || kingCol == -1)
+            return false;
+
+        return isSquareAttacked(kingRow, kingCol, isWhite);
     }
 
     // Generate FEN (Forsyth-Edwards Notation) string for Stockfish
