@@ -22,7 +22,7 @@ public class MainMenuPanel extends JPanel {
         JPanel titlePanel = new JPanel();
         titlePanel.setBackground(BACKGROUND_COLOR);
         titlePanel.setBorder(new EmptyBorder(50, 0, 30, 0));
-        JLabel titleLabel = new JLabel("Chess Game");
+        JLabel titleLabel = new JLabel("CHESS");
         titleLabel.setFont(TITLE_FONT);
         titleLabel.setForeground(TEXT_COLOR);
         titlePanel.add(titleLabel);
@@ -37,7 +37,7 @@ public class MainMenuPanel extends JPanel {
         JButton[] buttons = {
                 createStyledButton("Play vs Human"),
                 createStyledButton("Play vs Computer"),
-                createStyledButton("Load Game"),
+                // createStyledButton("Load Game"),
                 createStyledButton("Exit")
         };
 
@@ -50,11 +50,13 @@ public class MainMenuPanel extends JPanel {
         // Add action listeners
         buttons[0].addActionListener(e -> frame.startNewGame(false));
         buttons[1].addActionListener(e -> frame.startNewGame(true));
-        buttons[2].addActionListener(e -> {
-            // TODO: Implement load game functionality
-            JOptionPane.showMessageDialog(frame, "Load game feature coming soon!");
-        });
-        buttons[3].addActionListener(e -> System.exit(0));
+        /*
+         * buttons[2].addActionListener(e -> {
+         * // TODO: Implement load game functionality
+         * JOptionPane.showMessageDialog(frame, "Load game feature coming soon!");
+         * });
+         */
+        buttons[2].addActionListener(e -> System.exit(0));
 
         add(titlePanel, BorderLayout.NORTH);
         add(buttonPanel, BorderLayout.CENTER);

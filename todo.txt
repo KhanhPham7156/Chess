@@ -1,5 +1,0 @@
--Highlight squares after a move: When a piece moves (e.g., a1 -> a2), highlight both the starting square (a1) and the destination square (a2) in two different colors. After the next player's move, remove the highlights from the previous move.
-
--Pinned pieces: If a piece is pinned, do not draw the dot that represents its valid moves. For example, if a rook on a1 is pinned, do not show dots for its legal moves.
-
--King in check: If the king is in check, only show move dots for pieces that can block the check or capture the threatening piece. For example, if a rook needs to move to a1 to save the king, only show a dot on a1.

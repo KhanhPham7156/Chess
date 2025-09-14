@@ -10,7 +10,7 @@ public class ChessFrame extends JFrame {
 
     public ChessFrame() {
         // Main frame setup
-        setTitle("Chess Game");
+        setTitle("Chess");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         setMinimumSize(new Dimension(800, 800));
