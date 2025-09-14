@@ -22,6 +22,8 @@ public class BoardPanel extends JPanel {
     private static final Color DARK_SQUARE = new Color(100, 100, 100); // Green color
     private static final int DOT_SIZE = 24;
     private static final Color VALID_MOVE_DOT_COLOR = new Color(0, 0, 0, 200); // Semi-transparent green
+    private static final Color LAST_MOVE_FROM = new Color(255, 255, 150); // Light yellow
+    private static final Color LAST_MOVE_TO = new Color(255, 255, 0); // Bright yellow
 
     // Helper class for layered icons
     private static class LayeredIcon implements Icon {
@@ -99,6 +101,9 @@ public class BoardPanel extends JPanel {
                     updateSquare(computerMove.getFromRow(), rookToCol);
                 }
 
+                // After computer move, update colors to highlight the move
+                resetSquareColors();
+
                 String status = game.getGameStatus();
                 if (!status.isEmpty()) {
                     JOptionPane.showMessageDialog(this, status);
@@ -139,14 +144,30 @@ public class BoardPanel extends JPanel {
     }
 
     private void updateSquare(int row, int col) {
+        // Update piece icon/text
         Piece piece = game.getBoard().getPiece(row, col);
         if (piece != null && piece.getIcon() != null) {
             squares[row][col].setIcon(piece.getIcon());
-            squares[row][col].setText(""); // Xóa text nếu có ảnh
+            squares[row][col].setText(""); // Clear text if we have an icon
         } else {
             squares[row][col].setIcon(null);
             squares[row][col].setText(piece != null ? piece.getSymbol() : "");
         }
+
+        // Ensure square color is correct
+        Move lastMove = game.getBoard().getLastMove();
+        Color squareColor;
+        if (lastMove != null && (row == lastMove.getFromRow() && col == lastMove.getFromCol())) {
+            squareColor = LAST_MOVE_FROM;
+        } else if (lastMove != null && (row == lastMove.getToRow() && col == lastMove.getToCol())) {
+            squareColor = LAST_MOVE_TO;
+        } else {
+            squareColor = (row + col) % 2 == 1 ? DARK_SQUARE : LIGHT_SQUARE;
+        }
+        squares[row][col].setBackground(squareColor);
+        squares[row][col].setOpaque(true);
+        squares[row][col].setBorderPainted(false);
+        squares[row][col].setContentAreaFilled(true);
     }
 
     public void handleSquareClick(int row, int col) {
@@ -286,13 +307,23 @@ public class BoardPanel extends JPanel {
 
     private void resetSquareColors() {
         removeValidMoveDots();
+        Move lastMove = game.getBoard().getLastMove();
+
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
-                if ((row + col) % 2 == 1) {
-                    squares[row][col].setBackground(DARK_SQUARE); // Green squares
+                Color squareColor;
+                if (lastMove != null) {
+                    if (row == lastMove.getFromRow() && col == lastMove.getFromCol()) {
+                        squareColor = LAST_MOVE_FROM;
+                    } else if (row == lastMove.getToRow() && col == lastMove.getToCol()) {
+                        squareColor = LAST_MOVE_TO;
+                    } else {
+                        squareColor = (row + col) % 2 == 1 ? DARK_SQUARE : LIGHT_SQUARE;
+                    }
                 } else {
-                    squares[row][col].setBackground(LIGHT_SQUARE); // White squares
+                    squareColor = (row + col) % 2 == 1 ? DARK_SQUARE : LIGHT_SQUARE;
                 }
+                squares[row][col].setBackground(squareColor);
                 squares[row][col].setOpaque(true);
                 squares[row][col].setBorderPainted(false);
                 squares[row][col].setContentAreaFilled(true);

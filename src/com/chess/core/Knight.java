@@ -17,7 +17,7 @@ public class Knight extends Piece {
     }
 
     @Override
-    public List<Move> getValidMoves(Board board) {
+    protected List<Move> calculateValidMoves(Board board) {
         List<Move> validMoves = new ArrayList<>();
         int directions[][] = {
                 { -2, -1 }, { -2, 1 }, { -1, -2 }, { -1, 2 },

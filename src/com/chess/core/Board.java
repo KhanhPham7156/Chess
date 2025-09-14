@@ -3,9 +3,18 @@ package com.chess.core;
 public class Board {
     private Piece[][] board = new Piece[8][8];
     private Game game;
+    private Move lastMove; // Track the last move made
 
     public Board() {
         initializeBoard();
+    }
+
+    public Move getLastMove() {
+        return lastMove;
+    }
+
+    public void setLastMove(Move move) {
+        this.lastMove = move;
     }
 
     public void setGame(Game game) {
@@ -68,6 +77,7 @@ public class Board {
         board[toRow][toCol] = piece;
         board[fromRow][fromCol] = null;
         piece.setPosition(toRow, toCol);
+        lastMove = move; // Store the last move
         return true;
     }
 
@@ -206,6 +216,88 @@ public class Board {
             return false;
 
         return isSquareAttacked(kingRow, kingCol, isWhite);
+    }
+
+    public boolean isPinned(Piece piece) {
+        if (piece == null)
+            return false;
+
+        // Find the king of the same color
+        King king = null;
+        int kingRow = -1, kingCol = -1;
+
+        outer: for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece p = getPiece(row, col);
+                if (p instanceof King && p.isWhite() == piece.isWhite()) {
+                    king = (King) p;
+                    kingRow = row;
+                    kingCol = col;
+                    break outer;
+                }
+            }
+        }
+
+        if (king == null)
+            return false;
+
+        // Determine if the piece is between the king and an attacking piece
+        int pieceRow = piece.getRow();
+        int pieceCol = piece.getCol();
+
+        // Check if piece is on same rank, file, or diagonal as king
+        int rowDiff = kingRow - pieceRow;
+        int colDiff = kingCol - pieceCol;
+
+        // Not in line with king
+        if (rowDiff != 0 && colDiff != 0 && Math.abs(rowDiff) != Math.abs(colDiff)) {
+            return false;
+        }
+
+        // Direction from piece to king (we want to look in the opposite direction for
+        // attackers)
+        int rowDir = rowDiff == 0 ? 0 : rowDiff / Math.abs(rowDiff);
+        int colDir = colDiff == 0 ? 0 : colDiff / Math.abs(colDiff);
+
+        // Look for attacking piece in the direction away from the king
+        int row = pieceRow - rowDir;
+        int col = pieceCol - colDir;
+
+        while (row >= 0 && row < 8 && col >= 0 && col < 8) {
+            Piece p = getPiece(row, col);
+            if (p != null) {
+                if (p.isWhite() != piece.isWhite()) {
+                    // Found opponent's piece, check if it can pin in this direction
+                    boolean isDiagonal = Math.abs(rowDir) == Math.abs(colDir);
+                    boolean isStraight = rowDir == 0 || colDir == 0;
+
+                    if (isStraight && (p instanceof Rook || p instanceof Queen)) {
+                        return true;
+                    }
+                    if (isDiagonal && (p instanceof Bishop || p instanceof Queen)) {
+                        return true;
+                    }
+                }
+                // Found any other piece, not a pin
+                break;
+            }
+            row -= rowDir;
+            col -= colDir;
+        }
+
+        // Verify that the line between the piece and king is clear
+        row = pieceRow + rowDir;
+        col = pieceCol + colDir;
+        while (row != kingRow || col != kingCol) {
+            if (getPiece(row, col) != null) {
+                // Found a piece between our piece and the king, not a pin
+                return false;
+            }
+            row += rowDir;
+            col += colDir;
+        }
+
+        return false;
     }
 
     // Generate FEN (Forsyth-Edwards Notation) string for Stockfish

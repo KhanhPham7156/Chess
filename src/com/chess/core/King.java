@@ -64,7 +64,7 @@ public class King extends Piece {
     }
 
     @Override
-    public List<Move> getValidMoves(Board board) {
+    protected List<Move> calculateValidMoves(Board board) {
         List<Move> validMoves = new ArrayList<>(getBasicMoves(board));
 
         // Check for castling
@@ -113,6 +113,12 @@ public class King extends Piece {
 
     private boolean isSquareUnderAttack(Board board, int squareRow, int squareCol) {
         return ((Board) board).isSquareAttacked(squareRow, squareCol, isWhite);
+    }
+
+    @Override
+    protected List<Move> calculatePinnedMoves(Board board) {
+        // Kings cannot be pinned, so return normal moves
+        return calculateValidMoves(board);
     }
 
     @Override

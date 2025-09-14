@@ -17,7 +17,7 @@ public class Queen extends Piece {
     }
 
     @Override
-    public List<Move> getValidMoves(Board board) {
+    protected List<Move> calculateValidMoves(Board board) {
         List<Move> validMoves = new ArrayList<>();
         int[][] directions = {
                 { -1, -1 }, { -1, 0 }, { -1, 1 },
@@ -47,7 +47,78 @@ public class Queen extends Piece {
         }
         return validMoves;
     }
-    
+
+    @Override
+    protected List<Move> calculatePinnedMoves(Board board) {
+        // Find the king
+        King king = null;
+        int kingRow = -1, kingCol = -1;
+
+        outer: for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = board.getPiece(r, c);
+                if (p instanceof King && p.isWhite() == this.isWhite()) {
+                    king = (King) p;
+                    kingRow = r;
+                    kingCol = c;
+                    break outer;
+                }
+            }
+        }
+
+        if (king == null)
+            return null;
+
+        // Only allow moves along the line of pin
+        List<Move> pinnedMoves = new ArrayList<>();
+        boolean isDiagonal = Math.abs(kingRow - row) == Math.abs(kingCol - col);
+        boolean isStraight = kingRow == row || kingCol == col;
+
+        if (isDiagonal || isStraight) {
+            int rowDir = kingRow == row ? 0 : (kingRow - row) / Math.abs(kingRow - row);
+            int colDir = kingCol == col ? 0 : (kingCol - col) / Math.abs(kingCol - col);
+
+            // Check moves along the pin line
+            int newRow = row;
+            int newCol = col;
+            while (true) {
+                newRow += rowDir;
+                newCol += colDir;
+                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8)
+                    break;
+
+                Piece target = board.getPiece(newRow, newCol);
+                if (target == null) {
+                    pinnedMoves.add(new Move(row, col, newRow, newCol));
+                } else {
+                    if (target.isWhite() != isWhite) {
+                        pinnedMoves.add(new Move(row, col, newRow, newCol));
+                    }
+                    break;
+                }
+            }
+
+            // Check moves in opposite direction
+            newRow = row - rowDir;
+            newCol = col - colDir;
+            while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                Piece target = board.getPiece(newRow, newCol);
+                if (target == null) {
+                    pinnedMoves.add(new Move(row, col, newRow, newCol));
+                } else {
+                    if (target.isWhite() != isWhite && !(target instanceof King)) {
+                        pinnedMoves.add(new Move(row, col, newRow, newCol));
+                    }
+                    break;
+                }
+                newRow -= rowDir;
+                newCol -= colDir;
+            }
+        }
+
+        return pinnedMoves;
+    }
+
     @Override
     public String getSymbol() {
         return isWhite ? "wQ" : "bQ";

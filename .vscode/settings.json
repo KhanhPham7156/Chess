@@ -2,5 +2,13 @@
   "java.project.sourcePaths": ["src"],
   "java.project.outputPath": "bin",
   "java.project.referencedLibraries": ["lib/**/*.jar"],
-  "cSpell.words": ["Passanted", "queenside", "Stockfish"]
+  "cSpell.words": [
+    "bestmove",
+    "fullmove",
+    "halfmove",
+    "Passanted",
+    "queenside",
+    "RNBQKBNR",
+    "Stockfish"
+  ]
 }

@@ -54,12 +54,17 @@ public class Game {
             return false; // Can't capture the king - should be checkmate before this
         }
 
+        // Always start by setting the last move (this is the valid move we're
+        // executing)
+        board.setLastMove(move);
+
         // Handle special moves
         char specialMove = move.getSpecialMove();
         if (specialMove != '\0') {
             if (specialMove == 'E') { // En passant
                 capturedPiece = board.getPiece(move.getFromRow(), move.getToCol());
                 if (!(capturedPiece instanceof Pawn && ((Pawn) capturedPiece).canBeEnPassanted())) {
+                    board.setLastMove(null);
                     return false;
                 }
 
@@ -73,8 +78,6 @@ public class Game {
                 board.setPiece(fromRow, toCol, null);
                 if (capturedPiece != null) {
                     capturedPiece.setPosition(-1, -1);
-                    board.setPiece(capturedPiece.getRow(), capturedPiece.getCol(), null); // Clear the visual
-                                                                                          // representation
                 }
 
                 // Move the attacking pawn
@@ -102,11 +105,11 @@ public class Game {
                     ((King) piece).setHasMoved();
                 }
             }
-        }
-
-        // Execute the main move for non-special moves or en passant
-        if (specialMove != 'C' && specialMove != 'E') {
-            board.movePiece(move);
+        } else {
+            // Execute the main move for non-special moves
+            board.setPiece(move.getToRow(), move.getToCol(), piece);
+            board.setPiece(move.getFromRow(), move.getFromCol(), null);
+            piece.setPosition(move.getToRow(), move.getToCol());
         }
 
         // Handle pawn promotion - only if the move is actually valid
@@ -129,6 +132,7 @@ public class Game {
                     promotedPiece = new Queen(piece.isWhite(), move.getToRow(), move.getToCol()); // Default to Queen
             }
             board.setPiece(move.getToRow(), move.getToCol(), promotedPiece);
+            board.setLastMove(move);
         }
 
         // Update piece status
@@ -199,12 +203,15 @@ public class Game {
                     for (Move move : moves) {
                         // Try the move
                         Piece capturedPiece = board.getPiece(move.getToRow(), move.getToCol());
-                        board.movePiece(move);
+                        board.setPiece(move.getToRow(), move.getToCol(), piece);
+                        board.setPiece(move.getFromRow(), move.getFromCol(), null);
+                        piece.setPosition(move.getToRow(), move.getToCol());
 
                         // Check if the move puts/leaves us in check
                         boolean inCheck = board.isInCheck(isWhiteTurn);
 
                         // Undo the move
+                        piece.setPosition(move.getFromRow(), move.getFromCol());
                         board.setPiece(move.getFromRow(), move.getFromCol(), piece);
                         board.setPiece(move.getToRow(), move.getToCol(), capturedPiece);
 

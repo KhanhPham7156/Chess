@@ -34,7 +34,7 @@ public class Pawn extends Piece {
     }
 
     @Override
-    public List<Move> getValidMoves(Board board) {
+    protected List<Move> calculateValidMoves(Board board) {
         List<Move> validMoves = new ArrayList<>();
         int direction = isWhite ? -1 : 1; // White moves up, Black moves down
         int startRow = isWhite ? 6 : 1; // Starting row for pawns
@@ -91,6 +91,55 @@ public class Pawn extends Piece {
         }
 
         return validMoves;
+    }
+
+    @Override
+    protected List<Move> calculatePinnedMoves(Board board) {
+        List<Move> validMoves = calculateValidMoves(board);
+        List<Move> pinnedMoves = new ArrayList<>();
+
+        // Find the king
+        King king = null;
+        int kingRow = -1, kingCol = -1;
+
+        outer: for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = board.getPiece(r, c);
+                if (p instanceof King && p.isWhite() == this.isWhite()) {
+                    king = (King) p;
+                    kingRow = r;
+                    kingCol = c;
+                    break outer;
+                }
+            }
+        }
+
+        if (king == null)
+            return null;
+
+        // For pawns, if it's pinned vertically, it can move forward (and capture)
+        // If it's pinned diagonally, it can only capture in that diagonal direction
+        boolean isPinnedVertically = kingCol == col;
+        boolean isPinnedDiagonally = Math.abs(kingRow - row) == Math.abs(kingCol - col);
+
+        for (Move move : validMoves) {
+            if (isPinnedVertically) {
+                // Can only move along the same file
+                if (move.getToCol() == col) {
+                    pinnedMoves.add(move);
+                }
+            } else if (isPinnedDiagonally) {
+                // Can only capture along the diagonal line of the pin
+                int pinDiagDir = (kingCol - col) / Math.abs(kingRow - row);
+                if (Math.abs(move.getToCol() - col) == 1) { // It's a capture move
+                    if ((move.getToCol() - col) == pinDiagDir) {
+                        pinnedMoves.add(move);
+                    }
+                }
+            }
+        }
+
+        return pinnedMoves;
     }
 
     @Override

@@ -7,6 +7,16 @@ import com.chess.core.*;
 public class ComputerPlayer {
     private StockfishEngine engine;
     private static final int SEARCH_DEPTH = 10;
+    /*
+     * 1–3 ~800–1200 Elo (người mới chơi)
+     * 4–6 ~1400–1600 Elo (cơ bản, biết chiến thuật đơn giản)
+     * 7–9 ~1800–2000 Elo (có thể đánh ngang cấp Cờ vua FIDE candidate master yếu)
+     * 10–12 ~2100–2300 Elo
+     * 13–15 ~2400–2500 Elo (IM yếu)
+     * 16–18 ~2600–2700 Elo (GM mạnh)
+     * 19–22 ~2800+ Elo (siêu GM, gần mức Stockfish ở chế độ tournament)
+     * 25+ >3000 Elo (Stockfish max strength, siêu máy tính)
+     */
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(null,
