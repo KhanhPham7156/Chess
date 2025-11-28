@@ -6,7 +6,9 @@ import com.chess.core.*;
 
 public class ComputerPlayer {
     private StockfishEngine engine;
-    private static final int SEARCH_DEPTH = 10;
+    private static final int SEARCH_DEPTH = 25;
+    private static final int MIN_SEARCH_DEPTH = 12;
+    private static final int DEPTH_STEP = 4;
     /*
      * 1–3 ~800–1200 Elo (người mới chơi)
      * 4–6 ~1400–1600 Elo (cơ bản, biết chiến thuật đơn giản)
@@ -49,12 +51,8 @@ public class ComputerPlayer {
         }
 
         String fen = game.getBoard().toFEN();
-        String moveStr;
-
-        try {
-            moveStr = engine.getBestMove(fen, SEARCH_DEPTH);
-        } catch (IOException e) {
-            showError("Error getting move from Stockfish: " + e.getMessage());
+        String moveStr = requestMoveWithFallback(fen);
+        if (moveStr == null) {
             return null;
         }
 
@@ -103,6 +101,32 @@ public class ComputerPlayer {
         }
 
         return new Move(fromRow, fromCol, toRow, toCol);
+    }
+
+    private String requestMoveWithFallback(String fen) {
+        int depth = SEARCH_DEPTH;
+        IOException lastError = null;
+
+        // Retry with progressively smaller depths to avoid long blocking searches
+        while (depth >= MIN_SEARCH_DEPTH) {
+            try {
+                return engine.getBestMove(fen, depth);
+            } catch (IOException e) {
+                lastError = e;
+                depth -= DEPTH_STEP;
+            }
+        }
+
+        // Final attempt with a low depth to guarantee a quick response
+        try {
+            return engine.getBestMove(fen, Math.max(6, MIN_SEARCH_DEPTH / 2));
+        } catch (IOException e) {
+            lastError = e;
+        }
+
+        showError(
+                "Error getting move from Stockfish: " + (lastError != null ? lastError.getMessage() : "Unknown error"));
+        return null;
     }
 
     public void close() {

@@ -8,6 +8,9 @@ public class StockfishEngine {
     private BufferedReader processReader;
     private BufferedWriter processWriter;
     private static final String STOCKFISH_PATH = "resources/stockfish/stockfish-windows-x86-64-avx2.exe";
+    private static final int BASE_TIMEOUT_MS = 2000;
+    private static final int TIMEOUT_PER_DEPTH_MS = 500;
+    private static final int MAX_TIMEOUT_MS = 20000;
 
     public StockfishEngine() {
         try {
@@ -28,18 +31,19 @@ public class StockfishEngine {
         String line;
         String bestMove = null;
 
-        // Read until we find the best move or timeout after 5 seconds
+        // Read until we find the best move or hit our dynamic timeout threshold
         long startTime = System.currentTimeMillis();
+        int allowedTimeMs = Math.min(MAX_TIMEOUT_MS, BASE_TIMEOUT_MS + (searchDepth * TIMEOUT_PER_DEPTH_MS));
         while ((line = processReader.readLine()) != null) {
             if (line.startsWith("bestmove")) {
                 bestMove = line.split(" ")[1];
                 break;
             }
             // Timeout after 5 seconds
-            if (System.currentTimeMillis() - startTime > 5000) {
+            if (System.currentTimeMillis() - startTime > allowedTimeMs) {
                 // Send stop command to engine
                 sendCommand("stop");
-                throw new IOException("Stockfish timed out after 5 seconds");
+                throw new IOException("Stockfish timed out after " + allowedTimeMs + " ms");
             }
         }
 
