@@ -260,6 +260,18 @@ public class Board {
         int rowDir = rowDiff == 0 ? 0 : rowDiff / Math.abs(rowDiff);
         int colDir = colDiff == 0 ? 0 : colDiff / Math.abs(colDiff);
 
+        // Verify that the line between the piece and king is clear FIRST
+        int checkRow = pieceRow + rowDir;
+        int checkCol = pieceCol + colDir;
+        while (checkRow != kingRow || checkCol != kingCol) {
+            if (getPiece(checkRow, checkCol) != null) {
+                // Found a piece between our piece and the king, not a pin
+                return false;
+            }
+            checkRow += rowDir;
+            checkCol += colDir;
+        }
+
         // Look for attacking piece in the direction away from the king
         int row = pieceRow - rowDir;
         int col = pieceCol - colDir;
@@ -284,18 +296,6 @@ public class Board {
             }
             row -= rowDir;
             col -= colDir;
-        }
-
-        // Verify that the line between the piece and king is clear
-        row = pieceRow + rowDir;
-        col = pieceCol + colDir;
-        while (row != kingRow || col != kingCol) {
-            if (getPiece(row, col) != null) {
-                // Found a piece between our piece and the king, not a pin
-                return false;
-            }
-            row += rowDir;
-            col += colDir;
         }
 
         return false;

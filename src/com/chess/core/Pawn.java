@@ -117,25 +117,36 @@ public class Pawn extends Piece {
         if (king == null)
             return null;
 
-        // For pawns, if it's pinned vertically, it can move forward (and capture)
-        // If it's pinned diagonally, it can only capture in that diagonal direction
-        boolean isPinnedVertically = kingCol == col;
-        boolean isPinnedDiagonally = Math.abs(kingRow - row) == Math.abs(kingCol - col);
+        int dx = row - kingRow;
+        int dy = col - kingCol;
 
+        // Determine direction from King to Pawn
+        int stepX = Integer.compare(dx, 0);
+        int stepY = Integer.compare(dy, 0);
+
+        // Identify the line of the pin (squares between Pawn and Pinner, inclusive of
+        // Pinner)
+        List<Integer> allowedPositions = new ArrayList<>();
+
+        // Scan away from King (starting from Pawn's next square)
+        int currRow = row + stepX;
+        int currCol = col + stepY;
+
+        while (currRow >= 0 && currRow < 8 && currCol >= 0 && currCol < 8) {
+            allowedPositions.add(currRow * 8 + currCol);
+            Piece target = board.getPiece(currRow, currCol);
+            if (target != null) {
+                // Found the pinner (or friendly piece, but isPinned implies pinner exists)
+                break;
+            }
+            currRow += stepX;
+            currCol += stepY;
+        }
+
+        // Filter valid moves
         for (Move move : validMoves) {
-            if (isPinnedVertically) {
-                // Can only move along the same file
-                if (move.getToCol() == col) {
-                    pinnedMoves.add(move);
-                }
-            } else if (isPinnedDiagonally) {
-                // Can only capture along the diagonal line of the pin
-                int pinDiagDir = (kingCol - col) / Math.abs(kingRow - row);
-                if (Math.abs(move.getToCol() - col) == 1) { // It's a capture move
-                    if ((move.getToCol() - col) == pinDiagDir) {
-                        pinnedMoves.add(move);
-                    }
-                }
+            if (allowedPositions.contains(move.getToRow() * 8 + move.getToCol())) {
+                pinnedMoves.add(move);
             }
         }
 

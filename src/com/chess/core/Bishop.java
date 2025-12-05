@@ -67,52 +67,50 @@ public class Bishop extends Piece {
         if (king == null)
             return null;
 
-        // Only allow moves along the line of pin
         List<Move> pinnedMoves = new ArrayList<>();
-        boolean isDiagonal = Math.abs(kingRow - row) == Math.abs(kingCol - col);
 
-        if (isDiagonal) {
-            int[] direction = {
-                    (kingRow - row) / Math.abs(kingRow - row),
-                    (kingCol - col) / Math.abs(kingCol - col)
-            };
+        int dx = row - kingRow;
+        int dy = col - kingCol;
 
-            // Check moves along the pin line
-            int newRow = row;
-            int newCol = col;
-            while (true) {
-                newRow += direction[0];
-                newCol += direction[1];
-                if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8)
-                    break;
+        // If pinned straight (Rook/Queen pin), Bishop cannot move
+        if (Math.abs(dx) != Math.abs(dy)) {
+            return pinnedMoves;
+        }
 
-                Piece target = board.getPiece(newRow, newCol);
-                if (target == null) {
-                    pinnedMoves.add(new Move(row, col, newRow, newCol));
-                } else {
-                    if (target.isWhite() != isWhite) {
-                        pinnedMoves.add(new Move(row, col, newRow, newCol));
-                    }
-                    break;
+        // Determine direction away from king
+        int stepX = Integer.compare(dx, 0);
+        int stepY = Integer.compare(dy, 0);
+
+        // 1. Scan away from King (towards pinner)
+        int currRow = row + stepX;
+        int currCol = col + stepY;
+        while (currRow >= 0 && currRow < 8 && currCol >= 0 && currCol < 8) {
+            Piece target = board.getPiece(currRow, currCol);
+            if (target == null) {
+                pinnedMoves.add(new Move(row, col, currRow, currCol));
+            } else {
+                if (target.isWhite() != isWhite) {
+                    pinnedMoves.add(new Move(row, col, currRow, currCol));
                 }
+                break;
             }
+            currRow += stepX;
+            currCol += stepY;
+        }
 
-            // Check moves in opposite direction
-            newRow = row - direction[0];
-            newCol = col - direction[1];
-            while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                Piece target = board.getPiece(newRow, newCol);
-                if (target == null) {
-                    pinnedMoves.add(new Move(row, col, newRow, newCol));
-                } else {
-                    if (target.isWhite() != isWhite && !(target instanceof King)) {
-                        pinnedMoves.add(new Move(row, col, newRow, newCol));
-                    }
-                    break;
-                }
-                newRow -= direction[0];
-                newCol -= direction[1];
+        // 2. Scan towards King
+        currRow = row - stepX;
+        currCol = col - stepY;
+        while (currRow >= 0 && currRow < 8 && currCol >= 0 && currCol < 8) {
+            Piece target = board.getPiece(currRow, currCol);
+            if (target == null) {
+                pinnedMoves.add(new Move(row, col, currRow, currCol));
+            } else {
+                // Should be the King, stop.
+                break;
             }
+            currRow -= stepX;
+            currCol -= stepY;
         }
 
         return pinnedMoves;

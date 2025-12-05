@@ -86,53 +86,54 @@ public class Rook extends Piece {
         if (king == null)
             return null;
 
-        // Only allow moves along the line of pin
         List<Move> pinnedMoves = new ArrayList<>();
-        boolean isDiagonal = Math.abs(kingRow - row) == Math.abs(kingCol - col);
-        boolean isStraight = kingRow == row || kingCol == col;
 
-        if (isStraight) {
-            int[][] directions = {
-                    { kingRow == row ? 0 : (kingRow - row) / Math.abs(kingRow - row),
-                            kingCol == col ? 0 : (kingCol - col) / Math.abs(kingCol - col) }
-            };
+        int dx = row - kingRow;
+        int dy = col - kingCol;
 
-            for (int[] dir : directions) {
-                int newRow = row;
-                int newCol = col;
-                while (true) {
-                    newRow += dir[0];
-                    newCol += dir[1];
-                    if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8)
-                        break;
+        // If pinned diagonally, Rook cannot move
+        if (dx != 0 && dy != 0) {
+            return pinnedMoves;
+        }
 
-                    Piece target = board.getPiece(newRow, newCol);
-                    if (target == null) {
-                        pinnedMoves.add(new Move(row, col, newRow, newCol));
-                    } else {
-                        if (target.isWhite() != isWhite) {
-                            pinnedMoves.add(new Move(row, col, newRow, newCol));
-                        }
-                        break;
-                    }
+        // Determine direction away from king
+        int stepX = Integer.compare(dx, 0);
+        int stepY = Integer.compare(dy, 0);
+
+        // 1. Scan away from King (towards pinner)
+        int currRow = row + stepX;
+        int currCol = col + stepY;
+
+        while (currRow >= 0 && currRow < 8 && currCol >= 0 && currCol < 8) {
+            Piece target = board.getPiece(currRow, currCol);
+            if (target == null) {
+                pinnedMoves.add(new Move(row, col, currRow, currCol));
+            } else {
+                // If we hit a piece, it must be the pinner (or a friendly piece if logic is
+                // wrong, but isPinned checks that)
+                // We can capture it if it's enemy
+                if (target.isWhite() != isWhite) {
+                    pinnedMoves.add(new Move(row, col, currRow, currCol));
                 }
-
-                newRow = row - dir[0];
-                newCol = col - dir[1];
-                while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                    Piece target = board.getPiece(newRow, newCol);
-                    if (target == null) {
-                        pinnedMoves.add(new Move(row, col, newRow, newCol));
-                    } else {
-                        if (target.isWhite() != isWhite && !(target instanceof King)) {
-                            pinnedMoves.add(new Move(row, col, newRow, newCol));
-                        }
-                        break;
-                    }
-                    newRow -= dir[0];
-                    newCol -= dir[1];
-                }
+                break; // Stop at the first piece
             }
+            currRow += stepX;
+            currCol += stepY;
+        }
+
+        // 2. Scan towards King
+        currRow = row - stepX;
+        currCol = col - stepY;
+        while (currRow >= 0 && currRow < 8 && currCol >= 0 && currCol < 8) {
+            Piece target = board.getPiece(currRow, currCol);
+            if (target == null) {
+                pinnedMoves.add(new Move(row, col, currRow, currCol));
+            } else {
+                // Should be the King, stop.
+                break;
+            }
+            currRow -= stepX;
+            currCol -= stepY;
         }
 
         return pinnedMoves;
