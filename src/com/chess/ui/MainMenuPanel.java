@@ -49,7 +49,13 @@ public class MainMenuPanel extends JPanel {
 
         // Add action listeners
         buttons[0].addActionListener(e -> frame.startNewGame(false));
-        buttons[1].addActionListener(e -> frame.startNewGame(true));
+        buttons[1].addActionListener(e -> {
+            DifficultyDialog dialog = new DifficultyDialog(frame);
+            dialog.setVisible(true);
+            if (dialog.isConfirmed()) {
+                frame.startNewGame(true, dialog.getDifficultyLevel());
+            }
+        });
         /*
          * buttons[2].addActionListener(e -> {
          * // TODO: Implement load game functionality

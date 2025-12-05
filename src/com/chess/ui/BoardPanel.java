@@ -69,9 +69,13 @@ public class BoardPanel extends JPanel {
     }
 
     public BoardPanel(boolean vsComputer) {
+        this(vsComputer, 10); // Default difficulty level 10
+    }
+
+    public BoardPanel(boolean vsComputer, int difficultyLevel) {
         this.vsComputer = vsComputer;
         if (vsComputer) {
-            computer = new ComputerPlayer();
+            computer = new ComputerPlayer(difficultyLevel);
             // Create timer for computer moves with 500ms delay
             computerMoveTimer = new Timer(500, e -> makeComputerMove());
             computerMoveTimer.setRepeats(false);
@@ -82,36 +86,54 @@ public class BoardPanel extends JPanel {
 
     private void makeComputerMove() {
         if (!game.isGameOver() && !game.isWhiteTurn()) {
-            Move computerMove = computer.getMove(game);
-            if (computerMove != null) {
-                game.makeMove(computerMove);
-                updateSquare(computerMove.getFromRow(), computerMove.getFromCol());
-                updateSquare(computerMove.getToRow(), computerMove.getToCol());
-
-                // For special moves
-                if (computerMove.getSpecialMove() == 'E') {
-                    // Update en passant capture square
-                    updateSquare(computerMove.getFromRow(), computerMove.getToCol());
-                } else if (computerMove.getSpecialMove() == 'C') {
-                    // Update rook position for castling
-                    int rookFromCol = computerMove.getToCol() > computerMove.getFromCol() ? 7 : 0;
-                    int rookToCol = computerMove.getToCol() > computerMove.getFromCol() ? computerMove.getToCol() - 1
-                            : computerMove.getToCol() + 1;
-                    updateSquare(computerMove.getFromRow(), rookFromCol);
-                    updateSquare(computerMove.getFromRow(), rookToCol);
+            // Use SwingWorker to run computer move calculation in background
+            // This prevents the UI from freezing (hanging) while Stockfish thinks
+            SwingWorker<Move, Void> worker = new SwingWorker<Move, Void>() {
+                @Override
+                protected Move doInBackground() throws Exception {
+                    return computer.getMove(game);
                 }
 
-                // After computer move, update colors to highlight the move
-                resetSquareColors();
+                @Override
+                protected void done() {
+                    try {
+                        Move computerMove = get();
+                        if (computerMove != null) {
+                            game.makeMove(computerMove);
+                            updateSquare(computerMove.getFromRow(), computerMove.getFromCol());
+                            updateSquare(computerMove.getToRow(), computerMove.getToCol());
 
-                String status = game.getGameStatus();
-                if (!status.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, status);
-                    if (status.contains("wins") || status.contains("draw")) {
-                        resetBoard();
+                            // For special moves
+                            if (computerMove.getSpecialMove() == 'E') {
+                                // Update en passant capture square
+                                updateSquare(computerMove.getFromRow(), computerMove.getToCol());
+                            } else if (computerMove.getSpecialMove() == 'C') {
+                                // Update rook position for castling
+                                int rookFromCol = computerMove.getToCol() > computerMove.getFromCol() ? 7 : 0;
+                                int rookToCol = computerMove.getToCol() > computerMove.getFromCol()
+                                        ? computerMove.getToCol() - 1
+                                        : computerMove.getToCol() + 1;
+                                updateSquare(computerMove.getFromRow(), rookFromCol);
+                                updateSquare(computerMove.getFromRow(), rookToCol);
+                            }
+
+                            // After computer move, update colors to highlight the move
+                            resetSquareColors();
+
+                            String status = game.getGameStatus();
+                            if (!status.isEmpty()) {
+                                JOptionPane.showMessageDialog(BoardPanel.this, status);
+                                if (status.contains("wins") || status.contains("draw")) {
+                                    resetBoard();
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
-            }
+            };
+            worker.execute();
         }
     }
 
@@ -171,6 +193,11 @@ public class BoardPanel extends JPanel {
     }
 
     public void handleSquareClick(int row, int col) {
+        // If playing vs computer, prevent human from moving during computer's turn
+        if (vsComputer && !game.isWhiteTurn()) {
+            return;
+        }
+
         Piece clickedPiece = game.getBoard().getPiece(row, col);
         if (selectedSquare == null && clickedPiece != null) {
             // Only allow selecting pieces of current player's color

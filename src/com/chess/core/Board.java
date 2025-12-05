@@ -77,6 +77,7 @@ public class Board {
         board[toRow][toCol] = piece;
         board[fromRow][fromCol] = null;
         piece.setPosition(toRow, toCol);
+        piece.onMove(); // Notify piece that it has moved
         lastMove = move; // Store the last move
         return true;
     }
@@ -332,11 +333,54 @@ public class Board {
         // Add active color based on game state
         fen.append(game != null && game.isWhiteTurn() ? " w" : " b");
 
-        // Add castling availability (simplified)
-        fen.append(" KQkq");
+        // Add castling availability
+        StringBuilder castling = new StringBuilder();
 
-        // Add en passant target square (simplified)
-        fen.append(" -");
+        // White castling
+        Piece whiteKing = getPiece(7, 4);
+        if (whiteKing instanceof King && !((King) whiteKing).hasMoved()) {
+            Piece kingSideRook = getPiece(7, 7);
+            if (kingSideRook instanceof Rook && !((Rook) kingSideRook).hasMoved()) {
+                castling.append("K");
+            }
+            Piece queenSideRook = getPiece(7, 0);
+            if (queenSideRook instanceof Rook && !((Rook) queenSideRook).hasMoved()) {
+                castling.append("Q");
+            }
+        }
+
+        // Black castling
+        Piece blackKing = getPiece(0, 4);
+        if (blackKing instanceof King && !((King) blackKing).hasMoved()) {
+            Piece kingSideRook = getPiece(0, 7);
+            if (kingSideRook instanceof Rook && !((Rook) kingSideRook).hasMoved()) {
+                castling.append("k");
+            }
+            Piece queenSideRook = getPiece(0, 0);
+            if (queenSideRook instanceof Rook && !((Rook) queenSideRook).hasMoved()) {
+                castling.append("q");
+            }
+        }
+
+        if (castling.length() == 0) {
+            fen.append(" -");
+        } else {
+            fen.append(" ").append(castling);
+        }
+
+        // Add en passant target square
+        String enPassant = "-";
+        if (lastMove != null) {
+            Piece piece = getPiece(lastMove.getToRow(), lastMove.getToCol());
+            if (piece instanceof Pawn) {
+                if (Math.abs(lastMove.getFromRow() - lastMove.getToRow()) == 2) {
+                    int row = (lastMove.getFromRow() + lastMove.getToRow()) / 2;
+                    int col = lastMove.getFromCol();
+                    enPassant = "" + (char) ('a' + col) + (8 - row);
+                }
+            }
+        }
+        fen.append(" ").append(enPassant);
 
         // Add halfmove clock and fullmove number (simplified)
         fen.append(" 0 1");

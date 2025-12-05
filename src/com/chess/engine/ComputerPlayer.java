@@ -6,18 +6,18 @@ import com.chess.core.*;
 
 public class ComputerPlayer {
     private StockfishEngine engine;
-    private static final int SEARCH_DEPTH = 25;
-    private static final int MIN_SEARCH_DEPTH = 12;
-    private static final int DEPTH_STEP = 4;
+    private int searchDepth;
+    private int minSearchDepth;
+    private static final int DEPTH_STEP = 2;
     /*
+     * Difficulty Level to Depth mapping:
      * 1–3 ~800–1200 Elo (người mới chơi)
      * 4–6 ~1400–1600 Elo (cơ bản, biết chiến thuật đơn giản)
      * 7–9 ~1800–2000 Elo (có thể đánh ngang cấp Cờ vua FIDE candidate master yếu)
      * 10–12 ~2100–2300 Elo
      * 13–15 ~2400–2500 Elo (IM yếu)
      * 16–18 ~2600–2700 Elo (GM mạnh)
-     * 19–22 ~2800+ Elo (siêu GM, gần mức Stockfish ở chế độ tournament)
-     * 25+ >3000 Elo (Stockfish max strength, siêu máy tính)
+     * 19–20 ~2800+ Elo (siêu GM, gần mức Stockfish ở chế độ tournament)
      */
 
     private void showError(String message) {
@@ -27,7 +27,11 @@ public class ComputerPlayer {
                 JOptionPane.ERROR_MESSAGE);
     }
 
-    public ComputerPlayer() {
+    public ComputerPlayer(int difficultyLevel) {
+        // Map difficulty level (1-20) to search depth
+        this.searchDepth = difficultyLevel;
+        this.minSearchDepth = Math.max(1, difficultyLevel - 4);
+
         try {
             engine = new StockfishEngine();
             // Test if engine is working
@@ -104,11 +108,11 @@ public class ComputerPlayer {
     }
 
     private String requestMoveWithFallback(String fen) {
-        int depth = SEARCH_DEPTH;
+        int depth = searchDepth;
         IOException lastError = null;
 
         // Retry with progressively smaller depths to avoid long blocking searches
-        while (depth >= MIN_SEARCH_DEPTH) {
+        while (depth >= minSearchDepth) {
             try {
                 return engine.getBestMove(fen, depth);
             } catch (IOException e) {
@@ -117,9 +121,9 @@ public class ComputerPlayer {
             }
         }
 
-        // Final attempt with a low depth to guarantee a quick response
+        // Final attempt with a very low depth to guarantee a quick response
         try {
-            return engine.getBestMove(fen, Math.max(6, MIN_SEARCH_DEPTH / 2));
+            return engine.getBestMove(fen, 1);
         } catch (IOException e) {
             lastError = e;
         }

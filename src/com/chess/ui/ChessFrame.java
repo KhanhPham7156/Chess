@@ -46,8 +46,12 @@ public class ChessFrame extends JFrame {
     }
 
     public void startNewGame(boolean vsComputer) {
+        startNewGame(vsComputer, 10); // Default difficulty level 10
+    }
+
+    public void startNewGame(boolean vsComputer, int difficultyLevel) {
         getContentPane().removeAll();
-        boardPanel = new BoardPanel(vsComputer); // Pass the game mode to BoardPanel
+        boardPanel = new BoardPanel(vsComputer, difficultyLevel); // Pass the game mode and difficulty to BoardPanel
         getContentPane().add(boardPanel);
         validate();
         repaint();

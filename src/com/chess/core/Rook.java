@@ -17,6 +17,11 @@ public class Rook extends Piece {
         return hasMoved;
     }
 
+    @Override
+    public void onMove() {
+        this.hasMoved = true;
+    }
+
     public void setHasMoved() {
         this.hasMoved = true;
     }

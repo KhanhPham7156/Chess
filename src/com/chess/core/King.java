@@ -13,6 +13,15 @@ public class King extends Piece {
         this.hasMoved = false;
     }
 
+    public boolean hasMoved() {
+        return hasMoved;
+    }
+
+    @Override
+    public void onMove() {
+        this.hasMoved = true;
+    }
+
     public void setHasMoved() {
         this.hasMoved = true;
     }

@@ -16,6 +16,10 @@ public abstract class Piece {
         this.col = col;
     }
 
+    public void onMove() {
+        // Default implementation does nothing
+    }
+
     public List<Move> getValidMoves(Board board) {
         List<Move> moves = calculateValidMoves(board);
         List<Move> legalMoves = new ArrayList<>();
