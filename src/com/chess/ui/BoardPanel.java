@@ -16,6 +16,15 @@ public class BoardPanel extends JPanel {
     private ComputerPlayer computer;
     private boolean vsComputer;
     private Timer computerMoveTimer;
+    private String whiteName = "Player 1";
+    private String blackName = "Player 2";
+    private int timeControlMinutes = 0;
+
+    // Check blinking variables
+    private Timer checkBlinkTimer;
+    private int blinkCount;
+    private int kingRow, kingCol;
+    private boolean isBlinkRed;
 
     // Add color constants at the top of the class
     private static final Color LIGHT_SQUARE = Color.WHITE;
@@ -69,11 +78,20 @@ public class BoardPanel extends JPanel {
     }
 
     public BoardPanel(boolean vsComputer) {
-        this(vsComputer, 10); // Default difficulty level 10
+        this(vsComputer, 10, "Player 1", "Player 2", 0);
     }
 
     public BoardPanel(boolean vsComputer, int difficultyLevel) {
+        this(vsComputer, difficultyLevel, "Player 1", vsComputer ? "Computer" : "Player 2", 0);
+    }
+
+    public BoardPanel(boolean vsComputer, int difficultyLevel, String whiteName, String blackName,
+            int timeControlMinutes) {
         this.vsComputer = vsComputer;
+        this.whiteName = whiteName;
+        this.blackName = blackName;
+        this.timeControlMinutes = timeControlMinutes;
+
         if (vsComputer) {
             computer = new ComputerPlayer(difficultyLevel);
             // Create timer for computer moves with 500ms delay
@@ -82,6 +100,10 @@ public class BoardPanel extends JPanel {
         }
         setLayout(new GridLayout(8, 8));
         initializeBoard();
+    }
+
+    public Game getGame() {
+        return game;
     }
 
     private void makeComputerMove() {
@@ -119,14 +141,7 @@ public class BoardPanel extends JPanel {
 
                             // After computer move, update colors to highlight the move
                             resetSquareColors();
-
-                            String status = game.getGameStatus();
-                            if (!status.isEmpty()) {
-                                JOptionPane.showMessageDialog(BoardPanel.this, status);
-                                if (status.contains("wins") || status.contains("draw")) {
-                                    resetBoard();
-                                }
-                            }
+                            handleGameStatus();
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -139,6 +154,8 @@ public class BoardPanel extends JPanel {
 
     public void initializeBoard() {
         game = new Game(); // Create a new game with its initial board setup
+        game.setPlayerNames(whiteName, blackName);
+        game.setTimeControl(timeControlMinutes);
 
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
@@ -193,132 +210,164 @@ public class BoardPanel extends JPanel {
     }
 
     public void handleSquareClick(int row, int col) {
+        // Stop any active blinking when user interacts
+        stopCheckBlink();
+
         // If playing vs computer, prevent human from moving during computer's turn
         if (vsComputer && !game.isWhiteTurn()) {
             return;
         }
 
         Piece clickedPiece = game.getBoard().getPiece(row, col);
-        if (selectedSquare == null && clickedPiece != null) {
-            // Only allow selecting pieces of current player's color
-            if (clickedPiece.isWhite() == game.isWhiteTurn()) {
-                selectedSquare = squares[row][col];
-                selectedSquare.setBackground(Color.YELLOW);
+        boolean isMyPiece = clickedPiece != null && clickedPiece.isWhite() == game.isWhiteTurn();
 
-                // Show valid moves with dots
-                List<Move> validMoves = clickedPiece.getValidMoves(game.getBoard());
-                for (Move move : validMoves) {
-                    final int moveRow = move.getToRow();
-                    final int moveCol = move.getToCol();
+        if (selectedSquare == null) {
+            if (isMyPiece) {
+                selectSquare(row, col);
+            }
+        } else {
+            // Something is already selected
+            if (squares[row][col] == selectedSquare) {
+                // Clicked same square -> Deselect
+                deselect();
+            } else if (isMyPiece) {
+                // Clicked another friendly piece -> Change selection
+                deselect();
+                selectSquare(row, col);
+            } else {
+                // Clicked empty square or enemy piece -> Try Move
+                attemptMove(row, col);
+            }
+        }
+    }
 
-                    // Create dot icon
-                    ImageIcon dotIcon = new ImageIcon(createDotImage());
+    private void selectSquare(int row, int col) {
+        selectedSquare = squares[row][col];
+        selectedSquare.setBackground(Color.YELLOW);
 
-                    // If there's already a piece on the square, create composite icon
-                    Icon currentIcon = squares[moveRow][moveCol].getIcon();
-                    if (currentIcon != null) {
-                        squares[moveRow][moveCol].setIcon(new LayeredIcon(currentIcon, dotIcon));
-                    } else {
-                        squares[moveRow][moveCol].setIcon(dotIcon);
-                    }
+        // Show valid moves with dots
+        Piece piece = game.getBoard().getPiece(row, col);
+        if (piece != null) {
+            List<Move> validMoves = piece.getValidMoves(game.getBoard());
+            for (Move move : validMoves) {
+                final int moveRow = move.getToRow();
+                final int moveCol = move.getToCol();
+
+                // Create dot icon
+                ImageIcon dotIcon = new ImageIcon(createDotImage());
+
+                // If there's already a piece on the square, create composite icon
+                Icon currentIcon = squares[moveRow][moveCol].getIcon();
+                if (currentIcon != null) {
+                    squares[moveRow][moveCol].setIcon(new LayeredIcon(currentIcon, dotIcon));
+                } else {
+                    squares[moveRow][moveCol].setIcon(dotIcon);
                 }
             }
-        } else if (selectedSquare != null) {
-            int fromRow = -1, fromCol = -1;
+        }
+    }
 
-            // Find selected square's position
-            for (int r = 0; r < 8; r++) {
-                for (int c = 0; c < 8; c++) {
-                    if (squares[r][c] == selectedSquare) {
-                        fromRow = r;
-                        fromCol = c;
-                        break;
-                    }
+    private void deselect() {
+        resetSquareColors();
+        selectedSquare = null;
+    }
+
+    private void attemptMove(int row, int col) {
+        int fromRow = -1, fromCol = -1;
+
+        // Find selected square's position
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if (squares[r][c] == selectedSquare) {
+                    fromRow = r;
+                    fromCol = c;
+                    break;
                 }
             }
+        }
 
-            Piece piece = game.getBoard().getPiece(fromRow, fromCol);
-            Move move;
+        if (fromRow == -1) {
+            // Should not happen, but if it does, just reset
+            deselect();
+            return;
+        }
 
-            // Handle special moves
-            if (piece instanceof Pawn) {
-                if ((piece.isWhite() && row == 0) || (!piece.isWhite() && row == 7)) {
-                    // Check if the move is valid before showing promotion dialog
-                    List<Move> validMoves = piece.getValidMoves(game.getBoard());
-                    boolean canPromote = validMoves.stream()
-                            .anyMatch(m -> m.getToRow() == row && m.getToCol() == col);
+        Piece piece = game.getBoard().getPiece(fromRow, fromCol);
+        Move move;
 
-                    if (canPromote) {
-                        String[] options = { "Queen", "Rook", "Bishop", "Knight" };
-                        int choice = JOptionPane.showOptionDialog(this,
-                                "Choose promotion piece:",
-                                "Pawn Promotion",
-                                JOptionPane.DEFAULT_OPTION,
-                                JOptionPane.QUESTION_MESSAGE,
-                                null,
-                                options,
-                                options[0]);
+        // Handle special moves
+        if (piece instanceof Pawn) {
+            if ((piece.isWhite() && row == 0) || (!piece.isWhite() && row == 7)) {
+                // Check if the move is valid before showing promotion dialog
+                List<Move> validMoves = piece.getValidMoves(game.getBoard());
+                boolean canPromote = validMoves.stream()
+                        .anyMatch(m -> m.getToRow() == row && m.getToCol() == col);
 
-                        char promotionPiece = 'Q'; // Default to Queen
-                        if (choice >= 0) {
-                            promotionPiece = options[choice].charAt(0);
-                        }
-                        move = new Move(fromRow, fromCol, row, col, promotionPiece);
-                    } else {
-                        move = new Move(fromRow, fromCol, row, col);
+                if (canPromote) {
+                    String[] options = { "Queen", "Rook", "Bishop", "Knight" };
+                    int choice = JOptionPane.showOptionDialog(this,
+                            "Choose promotion piece:",
+                            "Pawn Promotion",
+                            JOptionPane.DEFAULT_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            options,
+                            options[0]);
+
+                    char promotionPiece = 'Q'; // Default to Queen
+                    if (choice >= 0) {
+                        promotionPiece = options[choice].charAt(0);
                     }
-                } else if (Math.abs(row - fromRow) == 1 && Math.abs(col - fromCol) == 1 &&
-                        game.getBoard().getPiece(row, col) == null) {
-                    // Possible en passant capture
-                    move = new Move(fromRow, fromCol, row, col, 'E');
+                    move = new Move(fromRow, fromCol, row, col, promotionPiece);
                 } else {
                     move = new Move(fromRow, fromCol, row, col);
                 }
-            } else if (piece instanceof King && Math.abs(col - fromCol) == 2) {
-                // Castling move
-                move = new Move(fromRow, fromCol, row, col, 'C');
+            } else if (Math.abs(row - fromRow) == 1 && Math.abs(col - fromCol) == 1 &&
+                    game.getBoard().getPiece(row, col) == null) {
+                // Possible en passant capture
+                move = new Move(fromRow, fromCol, row, col, 'E');
             } else {
-                // Normal move
                 move = new Move(fromRow, fromCol, row, col);
             }
+        } else if (piece instanceof King && Math.abs(col - fromCol) == 2) {
+            // Castling move
+            move = new Move(fromRow, fromCol, row, col, 'C');
+        } else {
+            // Normal move
+            move = new Move(fromRow, fromCol, row, col);
+        }
 
-            if (game.makeMove(move)) {
-                // Update the UI
-                updateSquare(fromRow, fromCol);
-                updateSquare(row, col);
+        if (game.makeMove(move)) {
+            // Update the UI
+            updateSquare(fromRow, fromCol);
+            updateSquare(row, col);
 
-                // For en passant, update the captured pawn's square
-                if (move.getSpecialMove() == 'E') {
-                    updateSquare(fromRow, col); // Update the square where the captured pawn was
-                }
+            // For en passant, update the captured pawn's square
+            if (move.getSpecialMove() == 'E') {
+                updateSquare(fromRow, col); // Update the square where the captured pawn was
+            }
 
-                // For castling, update rook position
-                if (piece instanceof King && Math.abs(col - fromCol) == 2) {
-                    int rookFromCol = col > fromCol ? 7 : 0;
-                    int rookToCol = col > fromCol ? col - 1 : col + 1;
-                    updateSquare(row, rookFromCol);
-                    updateSquare(row, rookToCol);
-                }
-
-                // Get and display game status
-                String status = game.getGameStatus();
-                if (!status.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, status);
-                    if (status.contains("wins") || status.contains("draw")) {
-                        resetBoard();
-                        return;
-                    }
-                }
-
-                // Start computer move timer if playing against computer
-                if (vsComputer && !game.isGameOver()) {
-                    computerMoveTimer.start();
-                }
+            // For castling, update rook position
+            if (piece instanceof King && Math.abs(col - fromCol) == 2) {
+                int rookFromCol = col > fromCol ? 7 : 0;
+                int rookToCol = col > fromCol ? col - 1 : col + 1;
+                updateSquare(row, rookFromCol);
+                updateSquare(row, rookToCol);
             }
 
             resetSquareColors();
-            selectedSquare = null;
+            handleGameStatus();
+
+            // Start computer move timer if playing against computer
+            if (vsComputer && !game.isGameOver()) {
+                computerMoveTimer.start();
+            }
+        } else {
+            // Invalid move, just deselect
+            deselect();
         }
+
+        selectedSquare = null;
     }
 
     private void removeValidMoveDots() {
@@ -370,9 +419,112 @@ public class BoardPanel extends JPanel {
     }
 
     public void resetBoard() {
+        stopCheckBlink();
+        selectedSquare = null;
         removeAll();
         initializeBoard();
         revalidate();
         repaint();
+    }
+
+    private void stopCheckBlink() {
+        if (checkBlinkTimer != null && checkBlinkTimer.isRunning()) {
+            checkBlinkTimer.stop();
+        }
+        // Ensure the king's square is reset to normal color if it was blinking
+        if (kingRow >= 0 && kingRow < 8 && kingCol >= 0 && kingCol < 8) {
+            Color squareColor = (kingRow + kingCol) % 2 == 1 ? DARK_SQUARE : LIGHT_SQUARE;
+            // Check if this square is part of the last move, if so, keep that color
+            Move lastMove = game.getBoard().getLastMove();
+            if (lastMove != null) {
+                if (kingRow == lastMove.getFromRow() && kingCol == lastMove.getFromCol()) {
+                    squareColor = LAST_MOVE_FROM;
+                } else if (kingRow == lastMove.getToRow() && kingCol == lastMove.getToCol()) {
+                    squareColor = LAST_MOVE_TO;
+                }
+            }
+            squares[kingRow][kingCol].setBackground(squareColor);
+        }
+    }
+
+    private void handleGameStatus() {
+        String status = game.getGameStatus();
+        if (status.isEmpty()) {
+            return;
+        }
+
+        if (status.contains("wins") || status.contains("draw")) {
+            JOptionPane.showMessageDialog(this, status);
+            resetBoard();
+        } else if (status.contains("check")) {
+            highlightKingInCheck();
+        }
+    }
+
+    private void highlightKingInCheck() {
+        // Find the king of the current turn (who is in check)
+        boolean whiteTurn = game.isWhiteTurn();
+        Piece king = null;
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = game.getBoard().getPiece(r, c);
+                if (p instanceof King && p.isWhite() == whiteTurn) {
+                    king = p;
+                    kingRow = r;
+                    kingCol = c;
+                    break;
+                }
+            }
+            if (king != null)
+                break;
+        }
+
+        if (king != null) {
+            if (checkBlinkTimer != null && checkBlinkTimer.isRunning()) {
+                checkBlinkTimer.stop();
+            }
+
+            blinkCount = 0;
+            isBlinkRed = true;
+
+            checkBlinkTimer = new Timer(500, e -> {
+                if (blinkCount >= 6) { // Blink for 3 seconds (6 * 500ms)
+                    ((Timer) e.getSource()).stop();
+                    // Restore original color
+                    Color squareColor = (kingRow + kingCol) % 2 == 1 ? DARK_SQUARE : LIGHT_SQUARE;
+                    Move lastMove = game.getBoard().getLastMove();
+                    if (lastMove != null) {
+                        if (kingRow == lastMove.getFromRow() && kingCol == lastMove.getFromCol()) {
+                            squareColor = LAST_MOVE_FROM;
+                        } else if (kingRow == lastMove.getToRow() && kingCol == lastMove.getToCol()) {
+                            squareColor = LAST_MOVE_TO;
+                        }
+                    }
+                    squares[kingRow][kingCol].setBackground(squareColor);
+                    return;
+                }
+
+                JButton kingSquare = squares[kingRow][kingCol];
+                if (isBlinkRed) {
+                    kingSquare.setBackground(Color.RED);
+                } else {
+                    Color squareColor = (kingRow + kingCol) % 2 == 1 ? DARK_SQUARE : LIGHT_SQUARE;
+                    Move lastMove = game.getBoard().getLastMove();
+                    if (lastMove != null) {
+                        if (kingRow == lastMove.getFromRow() && kingCol == lastMove.getFromCol()) {
+                            squareColor = LAST_MOVE_FROM;
+                        } else if (kingRow == lastMove.getToRow() && kingCol == lastMove.getToCol()) {
+                            squareColor = LAST_MOVE_TO;
+                        }
+                    }
+                    kingSquare.setBackground(squareColor);
+                }
+
+                isBlinkRed = !isBlinkRed;
+                blinkCount++;
+            });
+            checkBlinkTimer.start();
+        }
     }
 }

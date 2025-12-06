@@ -49,7 +49,7 @@ public class DifficultyDialog extends JDialog {
     public DifficultyDialog(JFrame parent) {
         super(parent, "Select Difficulty", true);
         setUndecorated(true);
-        setSize(500, 350);
+        setSize(500, 450);
         setLocationRelativeTo(parent);
 
         JPanel mainPanel = new JPanel();

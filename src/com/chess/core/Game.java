@@ -9,15 +9,99 @@ public class Game {
     private boolean gameOver;
     private List<Move> moveHistory;
 
+    // Player Info
+    private String whitePlayerName = "Player 1";
+    private String blackPlayerName = "Player 2";
+
+    // Time Control (in milliseconds)
+    private long whiteTimeRemaining;
+    private long blackTimeRemaining;
+    private boolean isTimedGame;
+    private long lastTimeUpdate;
+
     public Game() {
         this.board = new Board();
         this.board.setGame(this);
         this.isWhiteTurn = true; // White moves first
         this.gameOver = false;
         this.moveHistory = new ArrayList<>();
+
+        // Default no timer
+        this.isTimedGame = false;
+    }
+
+    public void setPlayerNames(String whiteName, String blackName) {
+        this.whitePlayerName = whiteName;
+        this.blackPlayerName = blackName;
+    }
+
+    public void setTimeControl(int minutes) {
+        if (minutes > 0) {
+            this.isTimedGame = true;
+            this.whiteTimeRemaining = minutes * 60 * 1000L;
+            this.blackTimeRemaining = minutes * 60 * 1000L;
+            this.lastTimeUpdate = System.currentTimeMillis();
+        } else {
+            this.isTimedGame = false;
+        }
+    }
+
+    public void updateTime() {
+        if (!isTimedGame || gameOver)
+            return;
+
+        long currentTime = System.currentTimeMillis();
+        long delta = currentTime - lastTimeUpdate;
+        lastTimeUpdate = currentTime;
+
+        if (isWhiteTurn) {
+            whiteTimeRemaining -= delta;
+            if (whiteTimeRemaining <= 0) {
+                whiteTimeRemaining = 0;
+                gameOver = true;
+                // Handle timeout logic here or let UI check it
+            }
+        } else {
+            blackTimeRemaining -= delta;
+            if (blackTimeRemaining <= 0) {
+                blackTimeRemaining = 0;
+                gameOver = true;
+            }
+        }
+    }
+
+    public String getWhitePlayerName() {
+        return whitePlayerName;
+    }
+
+    public String getBlackPlayerName() {
+        return blackPlayerName;
+    }
+
+    public long getWhiteTimeRemaining() {
+        return whiteTimeRemaining;
+    }
+
+    public long getBlackTimeRemaining() {
+        return blackTimeRemaining;
+    }
+
+    public boolean isTimedGame() {
+        return isTimedGame;
+    }
+
+    public void setGameOver(boolean gameOver) {
+        this.gameOver = gameOver;
     }
 
     public boolean makeMove(Move move) {
+        // Update time before making move to ensure accuracy
+        if (isTimedGame) {
+            updateTime();
+            if (gameOver)
+                return false; // Timeout
+        }
+
         Piece piece = board.getPiece(move.getFromRow(), move.getFromCol());
 
         // Basic validation checks
@@ -60,7 +144,7 @@ public class Game {
 
         // Handle special moves
         char specialMove = move.getSpecialMove();
-        if (specialMove != '\0') {
+        if (specialMove == 'E' || specialMove == 'C') {
             if (specialMove == 'E') { // En passant
                 capturedPiece = board.getPiece(move.getFromRow(), move.getToCol());
                 if (!(capturedPiece instanceof Pawn && ((Pawn) capturedPiece).canBeEnPassanted())) {

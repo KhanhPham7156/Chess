@@ -48,12 +48,12 @@ public class MainMenuPanel extends JPanel {
         }
 
         // Add action listeners
-        buttons[0].addActionListener(e -> frame.startNewGame(false));
+        buttons[0].addActionListener(e -> frame.showGameSetup(false, 0));
         buttons[1].addActionListener(e -> {
             DifficultyDialog dialog = new DifficultyDialog(frame);
             dialog.setVisible(true);
             if (dialog.isConfirmed()) {
-                frame.startNewGame(true, dialog.getDifficultyLevel());
+                frame.showGameSetup(true, dialog.getDifficultyLevel());
             }
         });
         /*
