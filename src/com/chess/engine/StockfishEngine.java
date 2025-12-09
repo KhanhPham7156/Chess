@@ -7,6 +7,7 @@ public class StockfishEngine {
     private Process engineProcess;
     private BufferedReader processReader;
     private BufferedWriter processWriter;
+    // Đảm bảo đường dẫn này trỏ đúng đến file .exe Stockfish của bạn
     private static final String STOCKFISH_PATH = "resources/stockfish/stockfish-windows-x86-64-avx2.exe";
 
     private Thread readerThread;
@@ -35,7 +36,6 @@ public class StockfishEngine {
         readerThread.setDaemon(true);
         readerThread.start();
 
-        // Initialize UCI protocol
         sendCommand("uci");
         if (waitForResponse("uciok", 5000) == null) {
             throw new IOException("Stockfish failed to initialize (no uciok)");
@@ -53,13 +53,11 @@ public class StockfishEngine {
             String line;
             while (isRunning && (line = processReader.readLine()) != null) {
                 String trimmed = line.trim();
-                // Keep essential messages
                 if (trimmed.startsWith("bestmove") || trimmed.equals("readyok") || trimmed.equals("uciok")) {
                     outputQueue.offer(trimmed);
                 }
             }
         } catch (IOException e) {
-            // Expected when process closes
         }
     }
 
@@ -71,7 +69,6 @@ public class StockfishEngine {
                 if (line != null && line.startsWith(expectedStart)) {
                     return line;
                 }
-                // Check if process died while waiting
                 if (engineProcess != null && !engineProcess.isAlive()) {
                     return null;
                 }
@@ -87,10 +84,9 @@ public class StockfishEngine {
         if (engineProcess == null || !engineProcess.isAlive()) {
             restart();
         }
-
         outputQueue.clear();
-
-        // Use a safer movetime calculation
+        
+        // Thời gian suy nghĩ tăng theo độ khó
         int moveTimeMs = Math.min(3000, 50 + (searchDepth * 100));
 
         try {
@@ -101,35 +97,24 @@ public class StockfishEngine {
             throw e;
         }
 
-        // Give plenty of buffer time (3 seconds extra)
         String response = waitForResponse("bestmove", moveTimeMs + 3000);
-
         if (response == null) {
-            System.err.println("Stockfish timeout. FEN: " + fen);
-            // Attempt to recover
             try {
                 sendCommand("stop");
                 response = waitForResponse("bestmove", 1000);
-            } catch (IOException e) {
-                // ignore
-            }
-
+            } catch (IOException e) {}
             if (response == null) {
                 restart();
-                throw new IOException("Stockfish did not return a move after timeout");
+                throw new IOException("Stockfish did not return a move");
             }
         }
 
         String[] parts = response.split(" ");
-        if (parts.length > 1) {
-            return parts[1];
-        }
-        return null;
+        return parts.length > 1 ? parts[1] : null;
     }
 
     private void sendCommand(String command) throws IOException {
-        if (processWriter == null)
-            throw new IOException("Engine not connected");
+        if (processWriter == null) throw new IOException("Engine not connected");
         processWriter.write(command + "\n");
         processWriter.flush();
     }
@@ -142,27 +127,13 @@ public class StockfishEngine {
     public void close() {
         isRunning = false;
         if (processWriter != null) {
-            try {
-                sendCommand("quit");
-                processWriter.close();
-            } catch (IOException e) {
-            }
+            try { sendCommand("quit"); processWriter.close(); } catch (IOException e) {}
         }
         if (processReader != null) {
-            try {
-                processReader.close();
-            } catch (IOException e) {
-            }
+            try { processReader.close(); } catch (IOException e) {}
         }
         if (engineProcess != null) {
-            engineProcess.destroy();
-            try {
-                if (!engineProcess.waitFor(500, TimeUnit.MILLISECONDS)) {
-                    engineProcess.destroyForcibly();
-                }
-            } catch (InterruptedException e) {
-                engineProcess.destroyForcibly();
-            }
+            engineProcess.destroyForcibly();
         }
     }
 }

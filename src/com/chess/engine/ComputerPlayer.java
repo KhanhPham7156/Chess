@@ -1,141 +1,104 @@
 package com.chess.engine;
 
-import java.io.IOException;
 import javax.swing.JOptionPane;
 import com.chess.core.*;
 
 public class ComputerPlayer {
-    private StockfishEngine engine;
-    private int searchDepth;
-    private int minSearchDepth;
-    private static final int DEPTH_STEP = 2;
-    /*
-     * Difficulty Level to Depth mapping:
-     * 1–3 ~800–1200 Elo (người mới chơi)
-     * 4–6 ~1400–1600 Elo (cơ bản, biết chiến thuật đơn giản)
-     * 7–9 ~1800–2000 Elo (có thể đánh ngang cấp Cờ vua FIDE candidate master yếu)
-     * 10–12 ~2100–2300 Elo
-     * 13–15 ~2400–2500 Elo (IM yếu)
-     * 16–18 ~2600–2700 Elo (GM mạnh)
-     * 19–20 ~2800+ Elo (siêu GM, gần mức Stockfish ở chế độ tournament)
-     */
+    public static final int TYPE_JAVA_BOT = 1;
+    public static final int TYPE_STOCKFISH = 2;
 
-    private void showError(String message) {
-        JOptionPane.showMessageDialog(null,
-                message,
-                "Chess Engine Error",
-                JOptionPane.ERROR_MESSAGE);
-    }
+    private int engineType;
+    private int difficultyLevel;
+    
+    // Các engine
+    private JavaChessEngine javaEngine;
+    private StockfishEngine stockfishEngine;
 
-    public ComputerPlayer(int difficultyLevel) {
-        // Map difficulty level (1-20) to search depth
-        this.searchDepth = difficultyLevel;
-        this.minSearchDepth = Math.max(1, difficultyLevel - 4);
+    public ComputerPlayer(int engineType, int difficultyLevel) {
+        this.engineType = engineType;
+        this.difficultyLevel = difficultyLevel;
 
-        try {
-            engine = new StockfishEngine();
-            // Test if engine is working
-            String testMove = engine.getBestMove("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 1);
-            if (testMove == null) {
-                throw new RuntimeException("Stockfish not responding");
+        if (engineType == TYPE_JAVA_BOT) {
+            this.javaEngine = new JavaChessEngine();
+        } else if (engineType == TYPE_STOCKFISH) {
+            try {
+                this.stockfishEngine = new StockfishEngine();
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, 
+                    "Could not start Stockfish! Switching to Java Bot.\nCheck file path in code.", 
+                    "Engine Error", JOptionPane.ERROR_MESSAGE);
+                this.engineType = TYPE_JAVA_BOT;
+                this.javaEngine = new JavaChessEngine();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null,
-                    "Could not initialize Stockfish engine.\nPlease make sure Stockfish is installed correctly.",
-                    "Engine Error",
-                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
     public Move getMove(Game game) {
-        if (engine == null) {
-            showError("Stockfish engine is not initialized");
-            return null;
+        if (engineType == TYPE_JAVA_BOT) {
+            // Mapping độ khó cho Java Bot (1-4)
+            int depth;
+            if (difficultyLevel <= 5) depth = 1;
+            else if (difficultyLevel <= 10) depth = 2;
+            else if (difficultyLevel <= 15) depth = 3;
+            else depth = 4;
+            
+            return javaEngine.getBestMove(game, depth);
+        } 
+        else {
+            // Stockfish Mode
+            if (stockfishEngine == null) return null;
+            
+            String fen = game.getBoard().toFEN();
+            try {
+                // Mapping độ khó Stockfish (dùng trực tiếp level 1-20 làm depth hoặc tính toán)
+                int depth = Math.max(1, difficultyLevel);
+                String moveStr = stockfishEngine.getBestMove(fen, depth);
+                return parseUCIMove(moveStr, game.getBoard());
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
         }
+    }
 
-        String fen = game.getBoard().toFEN();
-        String moveStr = requestMoveWithFallback(fen);
-        if (moveStr == null) {
-            return null;
-        }
+    // Chuyển đổi nước đi dạng String (e2e4) từ Stockfish thành object Move
+    private Move parseUCIMove(String moveStr, Board board) {
+        if (moveStr == null || moveStr.length() < 4) return null;
 
-        if (moveStr == null || moveStr.length() < 4) {
-            showError("Invalid move returned from Stockfish");
-            return null;
-        }
-
-        // Convert UCI move format (e.g., "e2e4") to our Move object
         int fromCol = moveStr.charAt(0) - 'a';
         int fromRow = '8' - moveStr.charAt(1);
         int toCol = moveStr.charAt(2) - 'a';
         int toRow = '8' - moveStr.charAt(3);
 
-        // Check if it's a promotion
         char promotion = '\0';
         if (moveStr.length() > 4) {
             switch (moveStr.charAt(4)) {
-                case 'q':
-                    promotion = 'Q';
-                    break;
-                case 'r':
-                    promotion = 'R';
-                    break;
-                case 'b':
-                    promotion = 'B';
-                    break;
-                case 'n':
-                    promotion = 'N';
-                    break;
+                case 'q': promotion = 'Q'; break;
+                case 'r': promotion = 'R'; break;
+                case 'b': promotion = 'B'; break;
+                case 'n': promotion = 'N'; break;
             }
         }
 
-        // Check for special moves
-        Piece piece = game.getBoard().getPiece(fromRow, fromCol);
+        // Kiểm tra nước đi đặc biệt
+        Piece piece = board.getPiece(fromRow, fromCol);
         if (piece instanceof King && Math.abs(toCol - fromCol) == 2) {
-            // Castling
             return new Move(fromRow, fromCol, toRow, toCol, 'C');
         } else if (piece instanceof Pawn) {
             if (promotion != '\0') {
                 return new Move(fromRow, fromCol, toRow, toCol, promotion);
-            } else if (fromCol != toCol && game.getBoard().getPiece(toRow, toCol) == null) {
-                // En passant
+            } else if (fromCol != toCol && board.getPiece(toRow, toCol) == null) {
                 return new Move(fromRow, fromCol, toRow, toCol, 'E');
             }
         }
-
         return new Move(fromRow, fromCol, toRow, toCol);
     }
 
-    private String requestMoveWithFallback(String fen) {
-        int depth = searchDepth;
-        IOException lastError = null;
-
-        // Retry with progressively smaller depths to avoid long blocking searches
-        while (depth >= minSearchDepth) {
-            try {
-                return engine.getBestMove(fen, depth);
-            } catch (IOException e) {
-                lastError = e;
-                depth -= DEPTH_STEP;
-            }
-        }
-
-        // Final attempt with a very low depth to guarantee a quick response
-        try {
-            return engine.getBestMove(fen, 1);
-        } catch (IOException e) {
-            lastError = e;
-        }
-
-        showError(
-                "Error getting move from Stockfish: " + (lastError != null ? lastError.getMessage() : "Unknown error"));
-        return null;
-    }
-
     public void close() {
-        if (engine != null) {
-            engine.close();
+        if (stockfishEngine != null) {
+            stockfishEngine.close();
         }
+        // Java engine does not need closing
     }
 }
