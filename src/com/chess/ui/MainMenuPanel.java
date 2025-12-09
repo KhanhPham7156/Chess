@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.border.EmptyBorder;
+import com.chess.engine.ComputerPlayer; // Import để lấy hằng số
 
 public class MainMenuPanel extends JPanel {
     private static final Color BACKGROUND_COLOR = new Color(40, 40, 40);
@@ -18,7 +19,6 @@ public class MainMenuPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(BACKGROUND_COLOR);
 
-        // Title Panel
         JPanel titlePanel = new JPanel();
         titlePanel.setBackground(BACKGROUND_COLOR);
         titlePanel.setBorder(new EmptyBorder(50, 0, 30, 0));
@@ -27,42 +27,50 @@ public class MainMenuPanel extends JPanel {
         titleLabel.setForeground(TEXT_COLOR);
         titlePanel.add(titleLabel);
 
-        // Buttons Panel
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
         buttonPanel.setBackground(BACKGROUND_COLOR);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
 
-        // Create styled buttons
         JButton[] buttons = {
                 createStyledButton("Play vs Human"),
-                createStyledButton("Play vs Computer"),
-                // createStyledButton("Load Game"),
+                createStyledButton("Vs Java Bot (Custom)"),
+                createStyledButton("Vs Stockfish"),
                 createStyledButton("Exit")
         };
 
-        // Add buttons with spacing
         for (JButton button : buttons) {
             buttonPanel.add(button);
             buttonPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         }
 
-        // Add action listeners
-        buttons[0].addActionListener(e -> frame.showGameSetup(false, 0));
+        // 1. Play vs Human
+        buttons[0].addActionListener(e -> frame.showGameSetup(false, 0, 0));
+
+        // 2. Play vs Java Bot
         buttons[1].addActionListener(e -> {
             DifficultyDialog dialog = new DifficultyDialog(frame);
+            dialog.setTitle("Java Bot Difficulty");
             dialog.setVisible(true);
             if (dialog.isConfirmed()) {
-                frame.showGameSetup(true, dialog.getDifficultyLevel());
+                // engineType = 1
+                frame.showGameSetup(true, dialog.getDifficultyLevel(), ComputerPlayer.TYPE_JAVA_BOT);
             }
         });
-        /*
-         * buttons[2].addActionListener(e -> {
-         * // TODO: Implement load game functionality
-         * JOptionPane.showMessageDialog(frame, "Load game feature coming soon!");
-         * });
-         */
-        buttons[2].addActionListener(e -> System.exit(0));
+
+        // 3. Play vs Stockfish
+        buttons[2].addActionListener(e -> {
+            DifficultyDialog dialog = new DifficultyDialog(frame);
+            dialog.setTitle("Stockfish Difficulty");
+            dialog.setVisible(true);
+            if (dialog.isConfirmed()) {
+                // engineType = 2
+                frame.showGameSetup(true, dialog.getDifficultyLevel(), ComputerPlayer.TYPE_STOCKFISH);
+            }
+        });
+
+        // 4. Exit
+        buttons[3].addActionListener(e -> System.exit(0));
 
         add(titlePanel, BorderLayout.NORTH);
         add(buttonPanel, BorderLayout.CENTER);
@@ -80,7 +88,6 @@ public class MainMenuPanel extends JPanel {
                 g2.dispose();
             }
         };
-
         button.setFont(BUTTON_FONT);
         button.setForeground(TEXT_COLOR);
         button.setBackground(BUTTON_COLOR);
@@ -88,20 +95,12 @@ public class MainMenuPanel extends JPanel {
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setPreferredSize(new Dimension(250, 50));
-        button.setMaximumSize(new Dimension(250, 50));
-
-        // Add hover effect
+        button.setPreferredSize(new Dimension(300, 50));
+        button.setMaximumSize(new Dimension(300, 50));
+        
         button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.repaint();
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.repaint();
-            }
+            public void mouseEntered(MouseEvent e) { button.repaint(); }
+            public void mouseExited(MouseEvent e) { button.repaint(); }
         });
 
         return button;
