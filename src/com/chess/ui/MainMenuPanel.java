@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.border.EmptyBorder;
-import com.chess.engine.ComputerPlayer; // Import để lấy hằng số
+import com.chess.engine.ComputerPlayer;
 
 public class MainMenuPanel extends JPanel {
     private static final Color BACKGROUND_COLOR = new Color(40, 40, 40);
@@ -13,67 +13,125 @@ public class MainMenuPanel extends JPanel {
     private static final Color HOVER_COLOR = new Color(90, 90, 90);
     private static final Color TEXT_COLOR = new Color(220, 220, 220);
     private static final Font TITLE_FONT = new Font("Serif", Font.BOLD, 48);
+    private static final Font SUBTITLE_FONT = new Font("SansSerif", Font.PLAIN, 24);
     private static final Font BUTTON_FONT = new Font("SansSerif", Font.BOLD, 20);
 
+    private ChessFrame frame;
+    private JPanel contentPanel; // Panel chứa các nút để thay đổi nội dung
+
     public MainMenuPanel(ChessFrame frame) {
+        this.frame = frame;
         setLayout(new BorderLayout());
         setBackground(BACKGROUND_COLOR);
 
+        // --- TITLE (Luôn hiển thị ở trên cùng) ---
         JPanel titlePanel = new JPanel();
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setBackground(BACKGROUND_COLOR);
         titlePanel.setBorder(new EmptyBorder(50, 0, 30, 0));
+
         JLabel titleLabel = new JLabel("CHESS");
         titleLabel.setFont(TITLE_FONT);
         titleLabel.setForeground(TEXT_COLOR);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
         titlePanel.add(titleLabel);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-        buttonPanel.setBackground(BACKGROUND_COLOR);
-        buttonPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
-
-        JButton[] buttons = {
-                createStyledButton("Play vs Human"),
-                createStyledButton("Vs Java Bot (Custom)"),
-                createStyledButton("Vs Stockfish"),
-                createStyledButton("Exit")
-        };
-
-        for (JButton button : buttons) {
-            buttonPanel.add(button);
-            buttonPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        }
-
-        // 1. Play vs Human
-        buttons[0].addActionListener(e -> frame.showGameSetup(false, 0, 0));
-
-        // 2. Play vs Java Bot
-        buttons[1].addActionListener(e -> {
-            DifficultyDialog dialog = new DifficultyDialog(frame);
-            dialog.setTitle("Java Bot Difficulty");
-            dialog.setVisible(true);
-            if (dialog.isConfirmed()) {
-                // engineType = 1
-                frame.showGameSetup(true, dialog.getDifficultyLevel(), ComputerPlayer.TYPE_JAVA_BOT);
-            }
-        });
-
-        // 3. Play vs Stockfish
-        buttons[2].addActionListener(e -> {
-            DifficultyDialog dialog = new DifficultyDialog(frame);
-            dialog.setTitle("Stockfish Difficulty");
-            dialog.setVisible(true);
-            if (dialog.isConfirmed()) {
-                // engineType = 2
-                frame.showGameSetup(true, dialog.getDifficultyLevel(), ComputerPlayer.TYPE_STOCKFISH);
-            }
-        });
-
-        // 4. Exit
-        buttons[3].addActionListener(e -> System.exit(0));
-
         add(titlePanel, BorderLayout.NORTH);
-        add(buttonPanel, BorderLayout.CENTER);
+
+        // --- CONTENT PANEL (Chứa các nút, sẽ thay đổi) ---
+        contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(BACKGROUND_COLOR);
+        contentPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        
+        add(contentPanel, BorderLayout.CENTER);
+
+        // Hiển thị menu chính ban đầu
+        showMainMenu();
+    }
+
+    // --- MÀN HÌNH CHÍNH ---
+    private void showMainMenu() {
+        contentPanel.removeAll();
+
+        JButton btnHuman = createStyledButton("Play vs Human");
+        JButton btnComputer = createStyledButton("Play vs Computer");
+        JButton btnExit = createStyledButton("Exit");
+
+        // Action: Play vs Human
+        btnHuman.addActionListener(e -> frame.showGameSetup(false, 0, 0));
+
+        // Action: Play vs Computer -> Chuyển sang màn hình chọn Bot
+        btnComputer.addActionListener(e -> showBotSelection());
+
+        // Action: Exit
+        btnExit.addActionListener(e -> System.exit(0));
+
+        addButtonToPanel(btnHuman);
+        addButtonToPanel(btnComputer);
+        addButtonToPanel(btnExit);
+
+        refreshPanel();
+    }
+
+    // --- MÀN HÌNH CHỌN BOT ---
+    private void showBotSelection() {
+        contentPanel.removeAll();
+
+        // Label tiêu đề phụ
+        JLabel lblSelect = new JLabel("Select Engine");
+        lblSelect.setFont(SUBTITLE_FONT);
+        lblSelect.setForeground(Color.GRAY);
+        lblSelect.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(lblSelect);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        JButton btnStockfish = createStyledButton("Stockfish (Pro)");
+        JButton btnDFS = createStyledButton("DFS Bot (Java)");
+        JButton btnBack = createStyledButton("Back");
+
+        // Action: Stockfish
+        btnStockfish.addActionListener(e -> {
+            showDifficultyDialog(ComputerPlayer.TYPE_STOCKFISH, "Stockfish Difficulty");
+        });
+
+        // Action: DFS Bot
+        btnDFS.addActionListener(e -> {
+            showDifficultyDialog(ComputerPlayer.TYPE_JAVA_BOT, "DFS Bot Difficulty");
+        });
+
+        // Action: Back -> Quay lại menu chính
+        btnBack.addActionListener(e -> showMainMenu());
+
+        addButtonToPanel(btnStockfish);
+        addButtonToPanel(btnDFS);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Khoảng cách nhỏ trước nút Back
+        addButtonToPanel(btnBack);
+
+        refreshPanel();
+    }
+
+    // Hàm phụ trợ để hiển thị Dialog chọn độ khó
+    private void showDifficultyDialog(int engineType, String title) {
+        DifficultyDialog dialog = new DifficultyDialog(frame);
+        dialog.setTitle(title);
+        dialog.setVisible(true);
+        
+        if (dialog.isConfirmed()) {
+            frame.showGameSetup(true, dialog.getDifficultyLevel(), engineType);
+        }
+    }
+
+    // Hàm phụ trợ thêm nút vào panel
+    private void addButtonToPanel(JButton btn) {
+        contentPanel.add(btn);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+    }
+
+    // Hàm làm mới giao diện sau khi đổi nút
+    private void refreshPanel() {
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private JButton createStyledButton(String text) {
@@ -88,6 +146,7 @@ public class MainMenuPanel extends JPanel {
                 g2.dispose();
             }
         };
+
         button.setFont(BUTTON_FONT);
         button.setForeground(TEXT_COLOR);
         button.setBackground(BUTTON_COLOR);
@@ -97,10 +156,18 @@ public class MainMenuPanel extends JPanel {
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
         button.setPreferredSize(new Dimension(300, 50));
         button.setMaximumSize(new Dimension(300, 50));
-        
+
+        // Add hover effect
         button.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { button.repaint(); }
-            public void mouseExited(MouseEvent e) { button.repaint(); }
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.repaint();
+            }
         });
 
         return button;

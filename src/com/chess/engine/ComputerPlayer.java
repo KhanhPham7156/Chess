@@ -43,7 +43,6 @@ public class ComputerPlayer {
             else if (difficultyLevel <= 15) depth = 3;
             else depth = 4;
             
-            try { Thread.sleep(200); } catch (InterruptedException e) {} // Delay nhỏ cho tự nhiên
             return javaEngine.getBestMove(game, depth);
         } 
         else {
