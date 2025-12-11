@@ -9,7 +9,7 @@ public class ComputerPlayer {
 
     private int engineType;
     private int difficultyLevel;
-    
+
     // Các engine
     private JavaChessEngine javaEngine;
     private StockfishEngine stockfishEngine;
@@ -25,9 +25,9 @@ public class ComputerPlayer {
                 this.stockfishEngine = new StockfishEngine();
             } catch (Exception e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(null, 
-                    "Could not start Stockfish! Switching to Java Bot.\nCheck file path in code.", 
-                    "Engine Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null,
+                        "Could not start Stockfish! Switching to Java Bot.\nCheck file path in code.",
+                        "Engine Error", JOptionPane.ERROR_MESSAGE);
                 this.engineType = TYPE_JAVA_BOT;
                 this.javaEngine = new JavaChessEngine();
             }
@@ -38,17 +38,21 @@ public class ComputerPlayer {
         if (engineType == TYPE_JAVA_BOT) {
             // Mapping độ khó cho Java Bot (1-4)
             int depth;
-            if (difficultyLevel <= 5) depth = 1;
-            else if (difficultyLevel <= 10) depth = 2;
-            else if (difficultyLevel <= 15) depth = 3;
-            else depth = 4;
-            
+            if (difficultyLevel <= 5)
+                depth = 1;
+            else if (difficultyLevel <= 10)
+                depth = 2;
+            else if (difficultyLevel <= 15)
+                depth = 3;
+            else
+                depth = 4;
+
             return javaEngine.getBestMove(game, depth);
-        } 
-        else {
+        } else {
             // Stockfish Mode
-            if (stockfishEngine == null) return null;
-            
+            if (stockfishEngine == null)
+                return null;
+
             String fen = game.getBoard().toFEN();
             try {
                 // Mapping độ khó Stockfish (dùng trực tiếp level 1-20 làm depth hoặc tính toán)
@@ -64,7 +68,8 @@ public class ComputerPlayer {
 
     // Chuyển đổi nước đi dạng String (e2e4) từ Stockfish thành object Move
     private Move parseUCIMove(String moveStr, Board board) {
-        if (moveStr == null || moveStr.length() < 4) return null;
+        if (moveStr == null || moveStr.length() < 4)
+            return null;
 
         int fromCol = moveStr.charAt(0) - 'a';
         int fromRow = '8' - moveStr.charAt(1);
@@ -74,10 +79,18 @@ public class ComputerPlayer {
         char promotion = '\0';
         if (moveStr.length() > 4) {
             switch (moveStr.charAt(4)) {
-                case 'q': promotion = 'Q'; break;
-                case 'r': promotion = 'R'; break;
-                case 'b': promotion = 'B'; break;
-                case 'n': promotion = 'N'; break;
+                case 'q':
+                    promotion = 'Q';
+                    break;
+                case 'r':
+                    promotion = 'R';
+                    break;
+                case 'b':
+                    promotion = 'B';
+                    break;
+                case 'n':
+                    promotion = 'N';
+                    break;
             }
         }
 
@@ -99,6 +112,5 @@ public class ComputerPlayer {
         if (stockfishEngine != null) {
             stockfishEngine.close();
         }
-        // Java engine does not need closing
     }
 }

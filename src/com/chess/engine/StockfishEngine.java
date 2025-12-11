@@ -7,7 +7,6 @@ public class StockfishEngine {
     private Process engineProcess;
     private BufferedReader processReader;
     private BufferedWriter processWriter;
-    // Đảm bảo đường dẫn này trỏ đúng đến file .exe Stockfish của bạn
     private static final String STOCKFISH_PATH = "resources/stockfish/stockfish-windows-x86-64-avx2.exe";
 
     private Thread readerThread;
@@ -85,7 +84,7 @@ public class StockfishEngine {
             restart();
         }
         outputQueue.clear();
-        
+
         // Thời gian suy nghĩ tăng theo độ khó
         int moveTimeMs = Math.min(3000, 50 + (searchDepth * 100));
 
@@ -102,7 +101,8 @@ public class StockfishEngine {
             try {
                 sendCommand("stop");
                 response = waitForResponse("bestmove", 1000);
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
             if (response == null) {
                 restart();
                 throw new IOException("Stockfish did not return a move");
@@ -114,7 +114,8 @@ public class StockfishEngine {
     }
 
     private void sendCommand(String command) throws IOException {
-        if (processWriter == null) throw new IOException("Engine not connected");
+        if (processWriter == null)
+            throw new IOException("Engine not connected");
         processWriter.write(command + "\n");
         processWriter.flush();
     }
@@ -127,10 +128,17 @@ public class StockfishEngine {
     public void close() {
         isRunning = false;
         if (processWriter != null) {
-            try { sendCommand("quit"); processWriter.close(); } catch (IOException e) {}
+            try {
+                sendCommand("quit");
+                processWriter.close();
+            } catch (IOException e) {
+            }
         }
         if (processReader != null) {
-            try { processReader.close(); } catch (IOException e) {}
+            try {
+                processReader.close();
+            } catch (IOException e) {
+            }
         }
         if (engineProcess != null) {
             engineProcess.destroyForcibly();

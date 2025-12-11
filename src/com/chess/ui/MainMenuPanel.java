@@ -24,7 +24,6 @@ public class MainMenuPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(BACKGROUND_COLOR);
 
-        // --- TITLE (Luôn hiển thị ở trên cùng) ---
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setBackground(BACKGROUND_COLOR);
@@ -34,23 +33,20 @@ public class MainMenuPanel extends JPanel {
         titleLabel.setFont(TITLE_FONT);
         titleLabel.setForeground(TEXT_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
+
         titlePanel.add(titleLabel);
         add(titlePanel, BorderLayout.NORTH);
 
-        // --- CONTENT PANEL (Chứa các nút, sẽ thay đổi) ---
         contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(BACKGROUND_COLOR);
         contentPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
-        
+
         add(contentPanel, BorderLayout.CENTER);
 
-        // Hiển thị menu chính ban đầu
         showMainMenu();
     }
 
-    // --- MÀN HÌNH CHÍNH ---
     private void showMainMenu() {
         contentPanel.removeAll();
 
@@ -74,11 +70,9 @@ public class MainMenuPanel extends JPanel {
         refreshPanel();
     }
 
-    // --- MÀN HÌNH CHỌN BOT ---
     private void showBotSelection() {
         contentPanel.removeAll();
 
-        // Label tiêu đề phụ
         JLabel lblSelect = new JLabel("Select Engine");
         lblSelect.setFont(SUBTITLE_FONT);
         lblSelect.setForeground(Color.GRAY);
@@ -105,30 +99,27 @@ public class MainMenuPanel extends JPanel {
 
         addButtonToPanel(btnStockfish);
         addButtonToPanel(btnDFS);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Khoảng cách nhỏ trước nút Back
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         addButtonToPanel(btnBack);
 
         refreshPanel();
     }
 
-    // Hàm phụ trợ để hiển thị Dialog chọn độ khó
     private void showDifficultyDialog(int engineType, String title) {
         DifficultyDialog dialog = new DifficultyDialog(frame);
         dialog.setTitle(title);
         dialog.setVisible(true);
-        
+
         if (dialog.isConfirmed()) {
             frame.showGameSetup(true, dialog.getDifficultyLevel(), engineType);
         }
     }
 
-    // Hàm phụ trợ thêm nút vào panel
     private void addButtonToPanel(JButton btn) {
         contentPanel.add(btn);
         contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
     }
 
-    // Hàm làm mới giao diện sau khi đổi nút
     private void refreshPanel() {
         contentPanel.revalidate();
         contentPanel.repaint();

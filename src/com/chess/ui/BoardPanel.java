@@ -11,13 +11,12 @@ import com.chess.core.King;
 import com.chess.engine.ComputerPlayer;
 
 public class BoardPanel extends JPanel {
-    // ... (Giữ nguyên các biến JButton[][], colors, icons...)
     private JButton[][] squares = new JButton[8][8];
     private JButton selectedSquare = null;
     private Game game;
     private ComputerPlayer computer;
     private boolean vsComputer;
-    private int engineType; // BIẾN MỚI
+    private int engineType;
     private Timer computerMoveTimer;
     private String whiteName;
     private String blackName;
@@ -38,7 +37,7 @@ public class BoardPanel extends JPanel {
     private static final Color LIGHT_SQUARE = new Color(238, 238, 210);
     private static final Color DARK_SQUARE = new Color(118, 150, 86);
     private static final int DOT_SIZE = 24;
-    private static final int DOT_SIZE2 = 34;
+    private static final int DOT_SIZE2 = 84;
     private static final Color VALID_MOVE_DOT_COLOR = new Color(0, 0, 0, 200);
     private static final Color LAST_MOVE_FROM = new Color(255, 255, 150);
     private static final Color LAST_MOVE_TO = new Color(255, 255, 0);
@@ -90,12 +89,11 @@ public class BoardPanel extends JPanel {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setColor(new Color(100, 100, 100, 200)); // Gray ring
         g2d.setStroke(new BasicStroke(4));
-        g2d.drawOval(2, 2, DOT_SIZE2 - 5, DOT_SIZE2 - 5);
+        g2d.drawOval(2, 2, DOT_SIZE2 - 10, DOT_SIZE2 - 10);
         g2d.dispose();
         return img;
     }
 
-    // CẬP NHẬT CONSTRUCTOR
     public BoardPanel(boolean vsComputer, int difficultyLevel, int engineType, String whiteName, String blackName,
             int timeControlMinutes) {
         this.vsComputer = vsComputer;
@@ -105,7 +103,6 @@ public class BoardPanel extends JPanel {
         this.timeControlMinutes = timeControlMinutes;
 
         if (vsComputer) {
-            // Truyền engineType vào đây
             computer = new ComputerPlayer(engineType, difficultyLevel);
             computerMoveTimer = new Timer(500, e -> makeComputerMove());
             computerMoveTimer.setRepeats(false);
@@ -113,11 +110,6 @@ public class BoardPanel extends JPanel {
         setLayout(new GridLayout(8, 8));
         initializeBoard();
     }
-
-    // ... (Toàn bộ phần code còn lại của BoardPanel giữ nguyên không đổi) ...
-    // initializeBoard(), updateSquare(), handleSquareClick(), makeComputerMove(),
-    // v.v...
-    // Chỉ cần đảm bảo hàm makeComputerMove gọi computer.getMove(game) như cũ.
 
     public Game getGame() {
         return game;
@@ -192,11 +184,6 @@ public class BoardPanel extends JPanel {
                         dragStartRow = r;
                         dragStartCol = c;
                         dragOffset = e.getPoint();
-
-                        // If clicking on a different square, select it immediately
-                        // if (squares[r][c] != selectedSquare) {
-                        // handleSquareClick(r, c);
-                        // }
                     }
 
                     @Override
@@ -323,10 +310,6 @@ public class BoardPanel extends JPanel {
         }
     }
 
-    // ... (Giữ nguyên các hàm updateSquare, handleSquareClick, selectSquare,
-    // deselect, attemptMove, v.v...) ...
-    // Copy lại từ code cũ của bạn vì logic không thay đổi.
-
     private void updateSquare(int row, int col) {
         Piece piece = game.getBoard().getPiece(row, col);
         if (piece != null && piece.getIcon() != null) {
@@ -348,7 +331,6 @@ public class BoardPanel extends JPanel {
         squares[row][col].setBackground(squareColor);
     }
 
-    // ... (Các hàm còn lại giữ nguyên) ...
     public void handleSquareClick(int row, int col) {
         stopCheckBlink();
         if (vsComputer && !game.isWhiteTurn())

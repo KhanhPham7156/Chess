@@ -1,5 +1,6 @@
 // ... (các import giữ nguyên)
 package com.chess.ui;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -9,28 +10,23 @@ public class GameSetupPanel extends JPanel {
     private ChessFrame frame;
     private boolean vsComputer;
     private int difficultyLevel;
-    private int engineType; // BIẾN MỚI
+    private int engineType;
 
     private JTextField whiteNameField;
     private JTextField blackNameField;
     private JComboBox<String> timeControlCombo;
-    // ... các biến khác giữ nguyên ...
     private JPanel customTimePanel;
     private JSpinner customTimeSpinner;
-    
-    // CẬP NHẬT CONSTRUCTOR
+
     public GameSetupPanel(ChessFrame frame, boolean vsComputer, int difficultyLevel, int engineType) {
         this.frame = frame;
         this.vsComputer = vsComputer;
         this.difficultyLevel = difficultyLevel;
         this.engineType = engineType;
-        
-        // ... (phần code UI giữ nguyên như cũ) ...
-        // Chỉ thay đổi phần hiển thị tên mặc định cho Bot
-        
+
         setLayout(new BorderLayout());
         setBackground(new Color(40, 40, 40));
-        // ... (Code tạo Title giữ nguyên) ...
+
         JLabel titleLabel = new JLabel("Game Setup", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Serif", Font.BOLD, 36));
         titleLabel.setForeground(new Color(220, 220, 220));
@@ -39,11 +35,12 @@ public class GameSetupPanel extends JPanel {
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setBackground(new Color(40, 40, 40));
         add(contentPanel, BorderLayout.CENTER);
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10,10,10,10);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
 
         // White Name
         addLabel(contentPanel, "White Player Name:", gbc);
@@ -56,7 +53,7 @@ public class GameSetupPanel extends JPanel {
         gbc.gridy++;
         addLabel(contentPanel, "Black Player Name:", gbc);
         gbc.gridy++;
-        
+
         // Xác định tên Bot mặc định
         String defaultBlackName = "Player 2";
         if (vsComputer) {
@@ -70,7 +67,6 @@ public class GameSetupPanel extends JPanel {
         }
         contentPanel.add(blackNameField, gbc);
 
-        // ... (Phần Time Control giữ nguyên) ...
         gbc.gridy++;
         addLabel(contentPanel, "Time Control:", gbc);
         gbc.gridy++;
@@ -83,9 +79,10 @@ public class GameSetupPanel extends JPanel {
         // Custom time panel
         gbc.gridy++;
         customTimePanel = new JPanel(new GridLayout(1, 4, 5, 5));
-        customTimePanel.setBackground(new Color(40,40,40));
+        customTimePanel.setBackground(new Color(40, 40, 40));
         customTimePanel.setVisible(false);
-        JLabel timeLabel = new JLabel("Time (min):"); timeLabel.setForeground(Color.LIGHT_GRAY);
+        JLabel timeLabel = new JLabel("Time (min):");
+        timeLabel.setForeground(Color.LIGHT_GRAY);
         customTimePanel.add(timeLabel);
         customTimeSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 180, 1));
         customTimePanel.add(customTimeSpinner);
@@ -93,26 +90,23 @@ public class GameSetupPanel extends JPanel {
 
         timeControlCombo.addActionListener(e -> {
             customTimePanel.setVisible("Custom".equals(timeControlCombo.getSelectedItem()));
-            revalidate(); repaint();
+            revalidate();
+            repaint();
         });
 
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
-        buttonPanel.setBackground(new Color(40,40,40));
+        buttonPanel.setBackground(new Color(40, 40, 40));
         JButton startButton = createStyledButton("Start Game");
         JButton backButton = createStyledButton("Back");
-        
+
         startButton.addActionListener(e -> startGame());
         backButton.addActionListener(e -> frame.showMenu());
-        
+
         buttonPanel.add(startButton);
         buttonPanel.add(backButton);
         add(buttonPanel, BorderLayout.SOUTH);
     }
-    
-    // ... (Giữ nguyên các hàm helper styleTextField, styleComboBox, addLabel, createStyledButton) ...
-    // Bạn có thể copy lại các hàm đó từ file cũ, chúng không thay đổi logic.
-    // Để ngắn gọn tôi sẽ viết hàm startGame() thôi.
 
     private void addLabel(JPanel panel, String text, GridBagConstraints gbc) {
         JLabel label = new JLabel(text);
@@ -120,7 +114,7 @@ public class GameSetupPanel extends JPanel {
         label.setForeground(new Color(220, 220, 220));
         panel.add(label, gbc);
     }
-    
+
     private void styleTextField(JTextField textField) {
         textField.setFont(new Font("SansSerif", Font.PLAIN, 14));
         textField.setBackground(new Color(60, 60, 60));
@@ -130,13 +124,13 @@ public class GameSetupPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(100, 100, 100)),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)));
     }
-    
+
     private void styleComboBox(JComboBox<String> comboBox) {
         comboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
         comboBox.setBackground(new Color(60, 60, 60));
         comboBox.setForeground(Color.WHITE);
     }
-    
+
     private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
         button.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -151,10 +145,13 @@ public class GameSetupPanel extends JPanel {
         String whiteName = whiteNameField.getText().trim();
         String blackName = blackNameField.getText().trim();
 
-        if (whiteName.isEmpty()) whiteName = "Player 1";
+        if (whiteName.isEmpty())
+            whiteName = "Player 1";
         if (blackName.isEmpty()) {
-            if (vsComputer) blackName = (engineType == ComputerPlayer.TYPE_STOCKFISH) ? "Stockfish" : "Java Bot";
-            else blackName = "Player 2";
+            if (vsComputer)
+                blackName = (engineType == ComputerPlayer.TYPE_STOCKFISH) ? "Stockfish" : "Java Bot";
+            else
+                blackName = "Player 2";
         }
 
         int minutes;
