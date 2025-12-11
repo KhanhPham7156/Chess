@@ -15,6 +15,7 @@ public class GameSetupPanel extends JPanel {
     private JTextField whiteNameField;
     private JTextField blackNameField;
     private JComboBox<String> timeControlCombo;
+    private JComboBox<String> colorCombo;
     private JPanel customTimePanel;
     private JSpinner customTimeSpinner;
 
@@ -75,6 +76,16 @@ public class GameSetupPanel extends JPanel {
         timeControlCombo.setSelectedItem("10 min");
         styleComboBox(timeControlCombo);
         contentPanel.add(timeControlCombo, gbc);
+
+        // Player Color (Only for vs Computer)
+        if (vsComputer) {
+            gbc.gridy++;
+            addLabel(contentPanel, "Play as:", gbc);
+            gbc.gridy++;
+            colorCombo = new JComboBox<>(new String[] { "White", "Black" });
+            styleComboBox(colorCombo);
+            contentPanel.add(colorCombo, gbc);
+        }
 
         // Custom time panel
         gbc.gridy++;
@@ -154,6 +165,20 @@ public class GameSetupPanel extends JPanel {
                 blackName = "Player 2";
         }
 
+        boolean playerIsWhite = true;
+        if (vsComputer && colorCombo != null) {
+            playerIsWhite = "White".equals(colorCombo.getSelectedItem());
+        }
+
+        // Swap names if player chooses Black so that the names match the colors
+        String finalWhiteName = whiteName;
+        String finalBlackName = blackName;
+
+        if (vsComputer && !playerIsWhite) {
+            finalWhiteName = blackName;
+            finalBlackName = whiteName;
+        }
+
         int minutes;
         String selected = (String) timeControlCombo.getSelectedItem();
         if ("Custom".equals(selected)) {
@@ -163,6 +188,7 @@ public class GameSetupPanel extends JPanel {
         }
 
         // Truyền engineType vào startNewGame
-        frame.startNewGame(vsComputer, difficultyLevel, engineType, whiteName, blackName, minutes);
+        frame.startNewGame(vsComputer, difficultyLevel, engineType, finalWhiteName, finalBlackName, minutes,
+                playerIsWhite);
     }
 }

@@ -17,6 +17,7 @@ public class BoardPanel extends JPanel {
     private ComputerPlayer computer;
     private boolean vsComputer;
     private int engineType;
+    private boolean playerIsWhite;
     private Timer computerMoveTimer;
     private String whiteName;
     private String blackName;
@@ -95,9 +96,10 @@ public class BoardPanel extends JPanel {
     }
 
     public BoardPanel(boolean vsComputer, int difficultyLevel, int engineType, String whiteName, String blackName,
-            int timeControlMinutes) {
+            int timeControlMinutes, boolean playerIsWhite) {
         this.vsComputer = vsComputer;
         this.engineType = engineType;
+        this.playerIsWhite = playerIsWhite;
         this.whiteName = whiteName;
         this.blackName = blackName;
         this.timeControlMinutes = timeControlMinutes;
@@ -109,6 +111,11 @@ public class BoardPanel extends JPanel {
         }
         setLayout(new GridLayout(8, 8));
         initializeBoard();
+
+        // If computer plays White, make the first move
+        if (vsComputer && !playerIsWhite) {
+            computerMoveTimer.start();
+        }
     }
 
     public Game getGame() {
@@ -116,7 +123,7 @@ public class BoardPanel extends JPanel {
     }
 
     private void makeComputerMove() {
-        if (!game.isGameOver() && !game.isWhiteTurn()) {
+        if (!game.isGameOver() && game.isWhiteTurn() != playerIsWhite) {
             SwingWorker<Move, Void> worker = new SwingWorker<Move, Void>() {
                 @Override
                 protected Move doInBackground() throws Exception {
@@ -178,7 +185,7 @@ public class BoardPanel extends JPanel {
                 MouseAdapter mouseHandler = new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
-                        if (vsComputer && !game.isWhiteTurn())
+                        if (vsComputer && game.isWhiteTurn() != playerIsWhite)
                             return;
 
                         dragStartRow = r;
@@ -188,7 +195,7 @@ public class BoardPanel extends JPanel {
 
                     @Override
                     public void mouseDragged(MouseEvent e) {
-                        if (vsComputer && !game.isWhiteTurn())
+                        if (vsComputer && game.isWhiteTurn() != playerIsWhite)
                             return;
 
                         // Only start dragging if we have a piece and it's our turn
@@ -229,7 +236,7 @@ public class BoardPanel extends JPanel {
 
                     @Override
                     public void mouseReleased(MouseEvent e) {
-                        if (vsComputer && !game.isWhiteTurn())
+                        if (vsComputer && game.isWhiteTurn() != playerIsWhite)
                             return;
 
                         if (isDragging) {
@@ -303,9 +310,22 @@ public class BoardPanel extends JPanel {
 
                 squares[row][col].addMouseListener(mouseHandler);
                 squares[row][col].addMouseMotionListener(mouseHandler);
+            }
+        }
 
-                add(squares[row][col]);
-                updateSquare(row, col);
+        if (!vsComputer || playerIsWhite) {
+            for (int row = 0; row < 8; row++) {
+                for (int col = 0; col < 8; col++) {
+                    add(squares[row][col]);
+                    updateSquare(row, col);
+                }
+            }
+        } else {
+            for (int row = 7; row >= 0; row--) {
+                for (int col = 7; col >= 0; col--) {
+                    add(squares[row][col]);
+                    updateSquare(row, col);
+                }
             }
         }
     }
@@ -333,7 +353,7 @@ public class BoardPanel extends JPanel {
 
     public void handleSquareClick(int row, int col) {
         stopCheckBlink();
-        if (vsComputer && !game.isWhiteTurn())
+        if (vsComputer && game.isWhiteTurn() != playerIsWhite)
             return;
         Piece clickedPiece = game.getBoard().getPiece(row, col);
         boolean isMyPiece = clickedPiece != null && clickedPiece.isWhite() == game.isWhiteTurn();
@@ -403,17 +423,7 @@ public class BoardPanel extends JPanel {
                 List<Move> validMoves = piece.getValidMoves(game.getBoard());
                 boolean canPromote = validMoves.stream().anyMatch(m -> m.getToRow() == row && m.getToCol() == col);
                 if (canPromote) {
-                    String[] options = { "Queen", "Rook", "Bishop", "Knight" };
-                    int choice = JOptionPane.showOptionDialog(this, "Choose promotion piece:", "Pawn Promotion",
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-                    char promotionPiece = 'Q';
-                    if (choice >= 0) {
-                        String selected = options[choice];
-                        if (selected.equals("Knight"))
-                            promotionPiece = 'N';
-                        else
-                            promotionPiece = selected.charAt(0);
-                    }
+                    char promotionPiece = showPromotionMenu(row, col, piece.isWhite());
                     move = new Move(fromRow, fromCol, row, col, promotionPiece);
                 } else
                     move = new Move(fromRow, fromCol, row, col);
@@ -445,6 +455,53 @@ public class BoardPanel extends JPanel {
         } else
             deselect();
         selectedSquare = null;
+    }
+
+    private char showPromotionMenu(int row, int col, boolean isWhite) {
+        JDialog promotionDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), true);
+        promotionDialog.setUndecorated(true);
+        promotionDialog.setLayout(new GridLayout(4, 1));
+
+        final char[] result = new char[1];
+        result[0] = 'Q'; // Default
+
+        String colorPrefix = isWhite ? "white" : "black";
+        String[] pieces = { "queen", "rook", "bishop", "knight" };
+        char[] codes = { 'Q', 'R', 'B', 'N' };
+
+        JButton[] promoButtons = new JButton[4];
+
+        for (int i = 0; i < 4; i++) {
+            final int index = i;
+            promoButtons[i] = new JButton();
+            promoButtons[i].setBackground(LIGHT_SQUARE);
+            promoButtons[i].setFocusPainted(false);
+            promoButtons[i].setBorder(BorderFactory.createLineBorder(Color.GRAY));
+
+            String path = "resources/image/pieces/" + colorPrefix + "_" + pieces[i] + ".png";
+            promoButtons[i].setIcon(new ImageIcon(path));
+
+            promoButtons[i].addActionListener(e -> {
+                result[0] = codes[index];
+                promotionDialog.dispose();
+            });
+
+            promotionDialog.add(promoButtons[i]);
+        }
+
+        int width = squares[row][col].getWidth();
+        int height = squares[row][col].getHeight();
+        promotionDialog.setSize(width, height * 4);
+
+        Point location = squares[row][col].getLocationOnScreen();
+        if (row == 7) {
+            location.y -= height * 3;
+        }
+
+        promotionDialog.setLocation(location);
+        promotionDialog.setVisible(true);
+
+        return result[0];
     }
 
     private void resetSquareColors() {
@@ -495,6 +552,11 @@ public class BoardPanel extends JPanel {
         selectedSquare = null;
         removeAll();
         initializeBoard();
+
+        if (vsComputer && !playerIsWhite) {
+            computerMoveTimer.start();
+        }
+
         revalidate();
         repaint();
     }
