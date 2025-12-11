@@ -61,7 +61,7 @@ public class ChessFrame extends JFrame {
                 playerIsWhite);
         gameContainer.add(boardPanel, BorderLayout.CENTER);
 
-        GameInfoPanel infoPanel = new GameInfoPanel();
+        GameInfoPanel infoPanel = new GameInfoPanel(playerIsWhite);
         gameContainer.add(infoPanel, BorderLayout.EAST);
 
         // --- Bottom Control Panel ---

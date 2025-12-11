@@ -16,22 +16,30 @@ public class GameInfoPanel extends JPanel {
     private static final Color ACTIVE_COLOR = new Color(144, 238, 144); // Light Green
     private static final Color INACTIVE_COLOR = new Color(240, 240, 240); // Light Gray
 
-    public GameInfoPanel() {
+    public GameInfoPanel(boolean playerIsWhite) {
         setLayout(new GridLayout(2, 1, 10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setPreferredSize(new Dimension(200, 0));
 
-        // Black Player Panel (Top)
+        // Black Player Panel
         blackNameLabel = new JLabel("Player");
         blackTimeLabel = new JLabel("00:00");
         blackPanel = createPlayerPanel(blackNameLabel, blackTimeLabel);
-        add(blackPanel);
 
-        // White Player Panel (Bottom)
+        // White Player Panel
         whiteNameLabel = new JLabel("Player");
         whiteTimeLabel = new JLabel("00:00");
         whitePanel = createPlayerPanel(whiteNameLabel, whiteTimeLabel);
-        add(whitePanel);
+
+        if (playerIsWhite) {
+            // Standard view: Black on top, White on bottom
+            add(blackPanel);
+            add(whitePanel);
+        } else {
+            // Flipped view: White on top, Black on bottom
+            add(whitePanel);
+            add(blackPanel);
+        }
     }
 
     private JPanel createPlayerPanel(JLabel nameLabel, JLabel timeLabel) {
